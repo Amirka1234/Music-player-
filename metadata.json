@@ -1,0 +1,7 @@
+{
+  "name": "Spotify Music",
+  "description": "Spotify-style music player with local MP3 playback, internet streams & radio, podcasts, 5-band equalizer, playlists, cloud sync, and lock screen widget.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

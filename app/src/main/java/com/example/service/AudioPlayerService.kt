@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.IBinder
@@ -30,11 +31,15 @@ class AudioPlayerService : Service() {
         const val ACTION_PREV = "com.example.ACTION_PREV"
 
         fun startService(context: Context) {
-            val intent = Intent(context, AudioPlayerService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                val intent = Intent(context, AudioPlayerService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -44,14 +49,71 @@ class AudioPlayerService : Service() {
         createNotificationChannel()
 
         val playerManager = MusicApplication.instance.playerManager
-        playerManager.onTrackStateChanged = { track, isPlaying ->
-            if (track != null) {
-                val notification = buildNotification(track, isPlaying)
+        val initialTrack = playerManager.currentTrack.value
+        val isPlaying = playerManager.isPlaying.value
+
+        val initialNotification = if (initialTrack != null) {
+            buildNotification(initialTrack, isPlaying)
+        } else {
+            buildIdleNotification()
+        }
+
+        startForegroundWithCompat(initialNotification)
+
+        playerManager.onTrackStateChanged = { track, playing ->
+            val notification = if (track != null) {
+                buildNotification(track, playing)
+            } else {
+                buildIdleNotification()
+            }
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.notify(NOTIFICATION_ID, notification)
+
+            // Also notify widget
+            MusicAppWidgetProvider.updateWidgets(this, track, playing)
+        }
+    }
+
+    private fun startForegroundWithCompat(notification: Notification) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+            } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
-            // Also notify widget
-            MusicAppWidgetProvider.updateWidgets(this, track, isPlaying)
+        } catch (e: Exception) {
+            try {
+                startForeground(NOTIFICATION_ID, notification)
+            } catch (e2: Exception) {
+                e2.printStackTrace()
+            }
         }
+    }
+
+    private fun buildIdleNotification(): Notification {
+        val mainIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            mainIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.app_icon_fg_1787235167749)
+            .setContentTitle("Spotify Music")
+            .setContentText("Ready to play")
+            .setContentIntent(contentPendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(false)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

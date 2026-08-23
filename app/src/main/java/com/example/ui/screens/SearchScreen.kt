@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Radio
@@ -56,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.Track
 import com.example.model.TrackSource
+import com.example.util.TrackCoverImage
 import com.example.ui.theme.AccentCyan
 import com.example.ui.theme.AccentOrange
 import com.example.ui.theme.AccentPink
@@ -88,19 +90,20 @@ fun SearchScreen(
     onFilterChange: (String) -> Unit,
     onPlayTrack: (Track) -> Unit,
     onOpenAddCustomStream: () -> Unit,
+    onOpenTrackMenu: (Track) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val filters = listOf("All", "Streams", "Podcasts", "Local")
+    val filters = listOf("Все", "Потоки & Радио", "Подкасты", "Локальные")
 
     val categories = listOf(
-        BrowseCategory("Lo-Fi & Chill", Color(0xFF2C2456), Color(0xFF5B3E96), "Lo-Fi"),
-        BrowseCategory("Synthwave & 80s", Color(0xFF6B21A8), Color(0xFFA855F7), "Synthwave"),
-        BrowseCategory("Electronic & EDM", Color(0xFF1E3A8A), Color(0xFF3B82F6), "Electronic"),
-        BrowseCategory("Acoustic & Folk", Color(0xFF9A3412), Color(0xFFF97316), "Acoustic"),
-        BrowseCategory("Tech & Podcasts", Color(0xFF831843), Color(0xFFEC4899), "Podcasts"),
-        BrowseCategory("Deep Focus", Color(0xFF134E4A), Color(0xFF14B8A6), "Focus"),
-        BrowseCategory("Jazz & Blues", Color(0xFF312E81), Color(0xFF6366F1), "Jazz"),
-        BrowseCategory("Rock & Metal", Color(0xFF881337), Color(0xFFE11D48), "Rock")
+        BrowseCategory("Лоу-фай и Чилл", Color(0xFF2C2456), Color(0xFF5B3E96), "Lo-Fi"),
+        BrowseCategory("Синтвейв 80-х", Color(0xFF6B21A8), Color(0xFFA855F7), "Synthwave"),
+        BrowseCategory("Электроника & EDM", Color(0xFF1E3A8A), Color(0xFF3B82F6), "Electronic"),
+        BrowseCategory("Акустика и Фолк", Color(0xFF9A3412), Color(0xFFF97316), "Acoustic"),
+        BrowseCategory("Технологии & Подкасты", Color(0xFF831843), Color(0xFFEC4899), "Podcasts"),
+        BrowseCategory("Глубокий Фокус", Color(0xFF134E4A), Color(0xFF14B8A6), "Focus"),
+        BrowseCategory("Джаз и Блюз", Color(0xFF312E81), Color(0xFF6366F1), "Jazz"),
+        BrowseCategory("Рок и Метал", Color(0xFF881337), Color(0xFFE11D48), "Rock")
     )
 
     val filteredTracks = allTracks.filter { track ->
@@ -110,9 +113,9 @@ fun SearchScreen(
                 track.genre.contains(searchQuery, ignoreCase = true)
 
         val matchesFilter = when (selectedFilter) {
-            "Streams" -> track.source == TrackSource.STREAM
-            "Podcasts" -> track.source == TrackSource.PODCAST
-            "Local" -> track.source == TrackSource.LOCAL
+            "Потоки & Радио", "Streams" -> track.source == TrackSource.STREAM
+            "Подкасты", "Podcasts" -> track.source == TrackSource.PODCAST
+            "Локальные", "Local" -> track.source == TrackSource.LOCAL
             else -> true
         }
 
@@ -128,7 +131,7 @@ fun SearchScreen(
         // Search Screen Header Title
         item {
             Text(
-                text = "Search & Discover",
+                text = "Поиск и рекомендации",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -137,47 +140,60 @@ fun SearchScreen(
             )
         }
 
-        // Search Text Input
+        // Search Bar Input
         item {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onQueryChange,
-                placeholder = { Text("What do you want to listen to?", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                placeholder = {
+                    Text(
+                        "Треки, артисты, жанры или подкасты...",
+                        color = ImmersiveTextMuted,
+                        fontSize = 14.sp
+                    )
+                },
                 leadingIcon = {
                     Icon(
                         Icons.Default.Search,
-                        contentDescription = "Search",
+                        contentDescription = "Search Icon",
                         tint = ImmersiveLavenderAccent
                     )
                 },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { onQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(
+                                Icons.Default.Clear,
+                                contentDescription = "Clear search",
+                                tint = ImmersiveTextMuted
+                            )
                         }
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = ImmersiveLavenderAccent,
                     unfocusedBorderColor = ImmersiveCardBorder,
                     focusedContainerColor = ImmersiveSurfaceDark,
-                    unfocusedContainerColor = ImmersiveSurfaceDark
+                    unfocusedContainerColor = ImmersiveSurfaceDark,
+                    cursorColor = ImmersiveLavenderAccent,
+                    focusedTextColor = ImmersiveTextPrimary,
+                    unfocusedTextColor = ImmersiveTextPrimary
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .testTag("search_input_field")
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .testTag("search_text_field")
             )
         }
 
-        // Filter Chips Row
+        // Filter Pills
         item {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 12.dp)
+                modifier = Modifier.padding(vertical = 10.dp)
             ) {
                 items(filters) { filter ->
                     val isSelected = selectedFilter == filter
@@ -228,13 +244,13 @@ fun SearchScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Connect Custom Internet Stream",
+                            "Подключить интернет-радио",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 15.sp
                         )
                         Text(
-                            "Add any live web radio or audio stream URL",
+                            "Добавьте URL любого прямого аудиопотока",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp
                         )
@@ -246,11 +262,11 @@ fun SearchScreen(
         }
 
         // Show Results if searching, or Browse Categories if not searching
-        if (searchQuery.isNotEmpty() || selectedFilter != "All") {
+        if (searchQuery.isNotEmpty() || (selectedFilter != "Все" && selectedFilter != "All")) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Results (${filteredTracks.size})",
+                    text = "Результаты (${filteredTracks.size})",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -262,14 +278,15 @@ fun SearchScreen(
                 TrackSearchItem(
                     track = track,
                     isCurrentlyPlaying = currentPlayingTrack?.id == track.id && isPlaying,
-                    onClick = { onPlayTrack(track) }
+                    onClick = { onPlayTrack(track) },
+                    onMenuClick = { onOpenTrackMenu(track) }
                 )
             }
         } else {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Browse all genres & categories",
+                    text = "Все жанры и категории",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -310,7 +327,8 @@ fun SearchScreen(
 private fun TrackSearchItem(
     track: Track,
     isCurrentlyPlaying: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onMenuClick: () -> Unit = {}
 ) {
     Surface(
         color = Color.Transparent,
@@ -323,10 +341,8 @@ private fun TrackSearchItem(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            val cover = track.coverDrawableRes ?: R.drawable.cover_cyberpunk_1787235201442
-            Image(
-                painter = painterResource(id = cover),
-                contentDescription = null,
+            TrackCoverImage(
+                track = track,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(48.dp)
@@ -353,10 +369,18 @@ private fun TrackSearchItem(
                 )
             }
 
+            IconButton(onClick = onMenuClick) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Меню трека",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             IconButton(onClick = onClick) {
                 Icon(
                     Icons.Default.PlayArrow,
-                    contentDescription = "Play",
+                    contentDescription = "Воспроизвести",
                     tint = if (isCurrentlyPlaying) ImmersiveLavenderAccent else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -371,16 +395,20 @@ private fun CategoryBrowseCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, ImmersiveCardBorder),
         modifier = modifier
-            .height(96.dp)
+            .height(90.dp)
             .clickable { onClick() }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.horizontalGradient(listOf(category.color1, category.color2)))
+                .background(
+                    Brush.linearGradient(
+                        listOf(category.color1, category.color2)
+                    )
+                )
                 .padding(14.dp)
         ) {
             Text(
@@ -394,9 +422,9 @@ private fun CategoryBrowseCard(
             Icon(
                 Icons.Default.MusicNote,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.3f),
+                tint = Color.White.copy(alpha = 0.25f),
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(48.dp)
                     .align(Alignment.BottomEnd)
             )
         }

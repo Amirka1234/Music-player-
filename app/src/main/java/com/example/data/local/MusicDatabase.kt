@@ -10,9 +10,10 @@ import androidx.room.RoomDatabase
         PlaylistEntity::class,
         PlaylistTrackCrossRef::class,
         SavedTrackEntity::class,
-        PodcastProgressEntity::class
+        PodcastProgressEntity::class,
+        CustomPodcastEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class MusicDatabase : RoomDatabase() {
@@ -24,14 +25,30 @@ abstract class MusicDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): MusicDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    MusicDatabase::class.java,
-                    "spotify_music_db"
-                ).fallbackToDestructiveMigration()
-                    .build()
-                INSTANCE = instance
-                instance
+                try {
+                    val instance = Room.databaseBuilder(
+                        context.applicationContext,
+                        MusicDatabase::class.java,
+                        "spotify_music_db"
+                    )
+                        .fallbackToDestructiveMigration()
+                        .build()
+                    INSTANCE = instance
+                    instance
+                } catch (e: Exception) {
+                    try {
+                        context.applicationContext.deleteDatabase("spotify_music_db")
+                    } catch (_: Exception) {}
+                    val instance = Room.databaseBuilder(
+                        context.applicationContext,
+                        MusicDatabase::class.java,
+                        "spotify_music_db"
+                    )
+                        .fallbackToDestructiveMigration()
+                        .build()
+                    INSTANCE = instance
+                    instance
+                }
             }
         }
     }

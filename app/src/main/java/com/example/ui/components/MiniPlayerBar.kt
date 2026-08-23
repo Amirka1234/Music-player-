@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.Track
 import com.example.model.TrackSource
+import com.example.util.TrackCoverImage
 import com.example.ui.theme.ImmersiveCardBorder
 import com.example.ui.theme.ImmersiveLavenderAccent
 import com.example.ui.theme.ImmersiveLavenderLight
@@ -92,10 +93,9 @@ fun MiniPlayerBar(
                         .padding(horizontal = 10.dp, vertical = 8.dp)
                 ) {
                     // Album Cover
-                    val coverRes = track.coverDrawableRes ?: R.drawable.cover_cyberpunk_1787235201442
-                    Image(
-                        painter = painterResource(id = coverRes),
-                        contentDescription = "Cover Art",
+                    TrackCoverImage(
+                        track = track,
+                        contentDescription = "Обложка трека",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(46.dp)

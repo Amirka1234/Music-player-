@@ -68,6 +68,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.R
 import com.example.model.Track
+import com.example.util.TrackCoverImage
 import com.example.ui.theme.ImmersiveCardBorder
 import com.example.ui.theme.ImmersiveDarkBg
 import com.example.ui.theme.ImmersiveLavenderAccent
@@ -76,6 +77,9 @@ import com.example.ui.theme.ImmersivePillInactive
 import com.example.ui.theme.ImmersivePurpleDark
 import com.example.ui.theme.ImmersivePurpleDeep
 import com.example.ui.theme.ImmersiveSurfaceDark
+import com.example.ui.theme.ImmersiveTextMuted
+import com.example.ui.theme.ImmersiveTextPrimary
+import com.example.ui.theme.ImmersiveTextSecondary
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -95,7 +99,7 @@ fun CreatePlaylistDialog(
         textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         title = {
             Text(
-                "Create New Playlist",
+                "Создать плейлист",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -105,8 +109,8 @@ fun CreatePlaylistDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Playlist Name") },
-                    placeholder = { Text("e.g. My Favorites 2026") },
+                    label = { Text("Название плейлиста") },
+                    placeholder = { Text("например, Мой плейлист 2026") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = ImmersiveLavenderAccent,
@@ -120,8 +124,8 @@ fun CreatePlaylistDialog(
                 OutlinedTextField(
                     value = desc,
                     onValueChange = { desc = it },
-                    label = { Text("Description (Optional)") },
-                    placeholder = { Text("e.g. Chill vibes & podcasts") },
+                    label = { Text("Описание (необязательно)") },
+                    placeholder = { Text("например, Музыка для отдыха и тренировок") },
                     maxLines = 3,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = ImmersiveLavenderAccent,
@@ -138,12 +142,12 @@ fun CreatePlaylistDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = ImmersiveLavenderAccent),
                 modifier = Modifier.testTag("playlist_create_confirm_button")
             ) {
-                Text("Create", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
+                Text("Создать", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = ImmersiveLavenderLight)
+                Text("Отмена", color = ImmersiveLavenderLight)
             }
         }
     )
@@ -156,7 +160,7 @@ fun AddCustomStreamDialog(
 ) {
     var title by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("https://") }
-    var genre by remember { mutableStateOf("Internet Radio") }
+    var genre by remember { mutableStateOf("Интернет-радио") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -167,13 +171,13 @@ fun AddCustomStreamDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Radio, contentDescription = null, tint = ImmersiveLavenderAccent)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Connect Internet Stream", fontWeight = FontWeight.Bold)
+                Text("Подключить поток", fontWeight = FontWeight.Bold)
             }
         },
         text = {
             Column {
                 Text(
-                    "Enter any direct MP3, AAC, or Icecast internet streaming link:",
+                    "Введите прямую ссылку на интернет-поток MP3, AAC или Icecast:",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -181,8 +185,8 @@ fun AddCustomStreamDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Station / Stream Title") },
-                    placeholder = { Text("e.g. Tokyo Chillhop FM") },
+                    label = { Text("Название станции / потока") },
+                    placeholder = { Text("например, Chillhop Radio") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = ImmersiveLavenderAccent,
@@ -194,7 +198,7 @@ fun AddCustomStreamDialog(
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text("Stream Audio URL") },
+                    label = { Text("URL потока") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = ImmersiveLavenderAccent,
@@ -206,7 +210,7 @@ fun AddCustomStreamDialog(
                 OutlinedTextField(
                     value = genre,
                     onValueChange = { genre = it },
-                    label = { Text("Genre") },
+                    label = { Text("Жанр") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = ImmersiveLavenderAccent,
@@ -223,12 +227,12 @@ fun AddCustomStreamDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = ImmersiveLavenderAccent),
                 modifier = Modifier.testTag("stream_connect_confirm_button")
             ) {
-                Text("Connect & Play", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
+                Text("Подключить", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = ImmersiveLavenderLight)
+                Text("Отмена", color = ImmersiveLavenderLight)
             }
         }
     )
@@ -241,11 +245,11 @@ fun SleepTimerDialog(
     onSetTimer: (Int) -> Unit
 ) {
     val options = listOf(
-        15 to "15 minutes",
-        30 to "30 minutes",
-        45 to "45 minutes",
-        60 to "1 hour",
-        90 to "1.5 hours"
+        15 to "15 минут",
+        30 to "30 минут",
+        45 to "45 минут",
+        60 to "1 час",
+        90 to "1.5 часа"
     )
 
     AlertDialog(
@@ -257,7 +261,7 @@ fun SleepTimerDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Timer, contentDescription = null, tint = ImmersiveLavenderAccent)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Sleep Timer", fontWeight = FontWeight.Bold)
+                Text("Таймер сна", fontWeight = FontWeight.Bold)
             }
         },
         text = {
@@ -266,14 +270,14 @@ fun SleepTimerDialog(
                     val mins = currentRemainingSeconds / 60
                     val secs = currentRemainingSeconds % 60
                     Text(
-                        "Timer active: %02d:%02d remaining".format(mins, secs),
+                        "Таймер активен: осталось %02d:%02d".format(mins, secs),
                         color = ImmersiveLavenderAccent,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                 } else {
                     Text(
-                        "Stop audio playback automatically when you fall asleep:",
+                        "Автоматически выключить музыку, когда вы уснёте:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 12.dp)
@@ -306,14 +310,14 @@ fun SleepTimerDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Turn Off Timer")
+                        Text("Выключить таймер")
                     }
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = ImmersiveLavenderLight)
+                Text("Закрыть", color = ImmersiveLavenderLight)
             }
         }
     )
@@ -329,7 +333,7 @@ fun LockScreenPreviewOverlay(
     onDismiss: () -> Unit
 ) {
     val currentTime = remember { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()) }
-    val currentDate = remember { SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date()) }
+    val currentDate = remember { SimpleDateFormat("EEEE, d MMMM", Locale("ru")).format(Date()) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -366,14 +370,14 @@ fun LockScreenPreviewOverlay(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White.copy(alpha = 0.8f))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Lock Screen Widget Active", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                    Text("Экран блокировки", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
                 }
 
                 IconButton(
                     onClick = onDismiss,
                     modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Unlock", tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = "Разблокировать", tint = Color.White)
                 }
             }
 
@@ -418,10 +422,8 @@ fun LockScreenPreviewOverlay(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        val coverRes = track?.coverDrawableRes ?: R.drawable.cover_cyberpunk_1787235201442
-                        Image(
-                            painter = painterResource(id = coverRes),
-                            contentDescription = "Cover",
+                        TrackCoverImage(
+                            track = track,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(68.dp)
@@ -440,7 +442,7 @@ fun LockScreenPreviewOverlay(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = track?.artist ?: "Tap play to stream",
+                                text = track?.artist ?: "Нажмите воспроизведение",
                                 fontSize = 13.sp,
                                 color = Color.White.copy(alpha = 0.7f),
                                 maxLines = 1,
@@ -455,7 +457,7 @@ fun LockScreenPreviewOverlay(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (isPlaying) "Playing now" else "Paused",
+                                    text = if (isPlaying) "Сейчас играет" else "Пауза",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = ImmersiveLavenderAccent
@@ -478,7 +480,7 @@ fun LockScreenPreviewOverlay(
                         ) {
                             Icon(
                                 Icons.Default.SkipPrevious,
-                                contentDescription = "Previous",
+                                contentDescription = "Предыдущий",
                                 tint = Color.White,
                                 modifier = Modifier.size(28.dp)
                             )
@@ -493,7 +495,7 @@ fun LockScreenPreviewOverlay(
                         ) {
                             Icon(
                                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (isPlaying) "Pause" else "Play",
+                                contentDescription = if (isPlaying) "Пауза" else "Воспроизведение",
                                 tint = ImmersivePurpleDeep,
                                 modifier = Modifier.size(32.dp)
                             )
@@ -505,7 +507,7 @@ fun LockScreenPreviewOverlay(
                         ) {
                             Icon(
                                 Icons.Default.SkipNext,
-                                contentDescription = "Next",
+                                contentDescription = "Следующий",
                                 tint = Color.White,
                                 modifier = Modifier.size(28.dp)
                             )
@@ -530,7 +532,7 @@ fun LockScreenPreviewOverlay(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Swipe up or tap to unlock",
+                    text = "Проведите вверх для разблокировки",
                     fontSize = 12.sp,
                     color = Color.White.copy(alpha = 0.6f),
                     fontWeight = FontWeight.Medium
@@ -539,3 +541,470 @@ fun LockScreenPreviewOverlay(
         }
     }
 }
+
+@Composable
+fun EditTrackDialog(
+    track: Track,
+    onDismiss: () -> Unit,
+    onConfirm: (newTitle: String, newArtist: String, newAlbum: String, newGenre: String, newLyrics: String) -> Unit
+) {
+    var title by remember { mutableStateOf(track.title) }
+    var artist by remember { mutableStateOf(track.artist) }
+    var album by remember { mutableStateOf(track.album) }
+    var genre by remember { mutableStateOf(track.genre) }
+    var lyrics by remember { mutableStateOf(track.lyrics) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = ImmersiveSurfaceDark,
+        title = {
+            Text(
+                "Изменить метаданные",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Название трека") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = artist,
+                    onValueChange = { artist = it },
+                    label = { Text("Исполнитель") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = album,
+                    onValueChange = { album = it },
+                    label = { Text("Альбом") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = genre,
+                    onValueChange = { genre = it },
+                    label = { Text("Жанр") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = lyrics,
+                    onValueChange = { lyrics = it },
+                    label = { Text("Текст песни") },
+                    maxLines = 4,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(title, artist, album, genre, lyrics) },
+                enabled = title.isNotBlank() && artist.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = ImmersiveLavenderAccent)
+            ) {
+                Text("Сохранить", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена", color = ImmersiveLavenderLight)
+            }
+        }
+    )
+}
+
+@Composable
+fun TrackLyricsDialog(
+    track: Track,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = ImmersiveSurfaceDark,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Текст песни",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = "${track.title} • ${track.artist}",
+                        fontSize = 12.sp,
+                        color = ImmersiveLavenderAccent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Закрыть", tint = ImmersiveTextMuted)
+                }
+            }
+        },
+        text = {
+            val lyricsText = if (track.lyrics.isNotBlank()) {
+                track.lyrics
+            } else {
+                "Текст для этого трека пока не добавлен.\n\nВы можете добавить текст песни через контекстное меню трека (кнопка 'Изменить')."
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+                    .background(ImmersiveDarkBg, RoundedCornerShape(12.dp))
+                    .padding(16.dp)
+            ) {
+                androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    item {
+                        Text(
+                            text = lyricsText,
+                            color = ImmersiveTextPrimary,
+                            fontSize = 15.sp,
+                            lineHeight = 24.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = ImmersiveLavenderAccent)
+            ) {
+                Text("Понятно", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+fun ConfirmDeleteTrackDialog(
+    track: Track,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = ImmersiveSurfaceDark,
+        title = {
+            Text(
+                "Удалить трек?",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Text(
+                "Вы уверены, что хотите удалить «${track.title}» из медиатеки и очереди воспроизведения?",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 14.sp
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF5350))
+            ) {
+                Text("Удалить", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена", color = ImmersiveLavenderLight)
+            }
+        }
+    )
+}
+
+@Composable
+fun AddToPlaylistDialog(
+    track: Track,
+    playlists: List<com.example.model.Playlist>,
+    onDismiss: () -> Unit,
+    onSelectPlaylist: (playlistId: String) -> Unit,
+    onCreateNewPlaylist: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = ImmersiveSurfaceDark,
+        title = {
+            Column {
+                Text(
+                    text = "Добавить в плейлист",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 18.sp
+                )
+                Text(
+                    text = "${track.title} • ${track.artist}",
+                    color = ImmersiveLavenderAccent,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+            ) {
+                // Button to create a new playlist
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = ImmersiveLavenderAccent.copy(alpha = 0.15f),
+                    border = BorderStroke(1.dp, ImmersiveLavenderAccent.copy(alpha = 0.4f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onDismiss()
+                            onCreateNewPlaylist()
+                        }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(ImmersiveLavenderAccent),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("+", color = ImmersivePurpleDeep, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Создать новый плейлист",
+                            fontWeight = FontWeight.SemiBold,
+                            color = ImmersiveLavenderLight,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (playlists.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Нет доступных плейлистов.\nСоздайте первый плейлист выше!",
+                            textAlign = TextAlign.Center,
+                            color = ImmersiveTextMuted,
+                            fontSize = 13.sp
+                        )
+                    }
+                } else {
+                    Text(
+                        "Ваши плейлисты:",
+                        color = ImmersiveTextMuted,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(
+                            items = playlists,
+                            key = { it.id },
+                            contentType = { "playlist_picker_item" }
+                        ) { playlist ->
+                            val alreadyIn = playlist.trackIds.contains(track.id)
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (alreadyIn) ImmersiveSurfaceDark else ImmersivePillInactive,
+                                border = BorderStroke(1.dp, if (alreadyIn) ImmersiveLavenderAccent.copy(alpha = 0.5f) else ImmersiveCardBorder),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = !alreadyIn) {
+                                        onSelectPlaylist(playlist.id)
+                                    }
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = playlist.title,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (alreadyIn) ImmersiveLavenderAccent else ImmersiveTextPrimary,
+                                            fontSize = 14.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "${playlist.trackIds.size} треков",
+                                            color = ImmersiveTextMuted,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                    if (alreadyIn) {
+                                        Text(
+                                            "Уже добавлен",
+                                            color = ImmersiveLavenderAccent,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Закрыть", color = ImmersiveLavenderLight)
+            }
+        }
+    )
+}
+
+@Composable
+fun AddPodcastDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (title: String, host: String, url: String, category: String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var host by remember { mutableStateOf("") }
+    var url by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("Подкаст") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = ImmersiveSurfaceDark,
+        title = {
+            Text(
+                "Добавить подкаст по ссылке",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Введите прямую ссылку на аудиопоток или эпизод подкаста (MP3, AAC, HLS, Shoutcast):",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Название подкаста / выпуска") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth().testTag("podcast_title_input")
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = host,
+                    onValueChange = { host = it },
+                    label = { Text("Автор / Ведущий") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text("URL потока / аудиофайла") },
+                    placeholder = { Text("https://example.com/podcast.mp3") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth().testTag("podcast_url_input")
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Категория (напр. IT, Наука, Музыка)") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ImmersiveLavenderAccent,
+                        focusedLabelColor = ImmersiveLavenderAccent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(title, host, url, category) },
+                enabled = title.isNotBlank() && url.length > 8,
+                colors = ButtonDefaults.buttonColors(containerColor = ImmersiveLavenderAccent),
+                modifier = Modifier.testTag("podcast_add_confirm_button")
+            ) {
+                Text("Добавить", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена", color = ImmersiveLavenderLight)
+            }
+        }
+    )
+}
+
+

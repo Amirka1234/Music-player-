@@ -212,6 +212,57 @@ class AudioPlayerManager(private val context: Context) {
         playTrack(prevTrack, list)
     }
 
+    fun playNext(track: Track) {
+        val list = _playlist.value.toMutableList()
+        val current = _currentTrack.value
+        if (current == null) {
+            playTrack(track, listOf(track))
+            return
+        }
+        val currentIdx = list.indexOfFirst { it.id == current.id }
+        list.removeAll { it.id == track.id }
+        val insertIdx = if (currentIdx != -1) (currentIdx + 1).coerceAtMost(list.size) else 0
+        list.add(insertIdx, track)
+        _playlist.value = list
+    }
+
+    fun addToQueue(track: Track) {
+        val list = _playlist.value.toMutableList()
+        if (!list.any { it.id == track.id }) {
+            list.add(track)
+            _playlist.value = list
+        }
+        if (_currentTrack.value == null) {
+            playTrack(track, list)
+        }
+    }
+
+    fun removeFromQueue(trackId: String) {
+        val list = _playlist.value.toMutableList()
+        val removed = list.removeAll { it.id == trackId }
+        if (removed) {
+            _playlist.value = list
+            if (_currentTrack.value?.id == trackId) {
+                if (list.isNotEmpty()) {
+                    skipToNext()
+                } else {
+                    releasePlayer()
+                    _currentTrack.value = null
+                    _isPlaying.value = false
+                }
+            }
+        }
+    }
+
+    fun updateTrackInQueue(updatedTrack: Track) {
+        val list = _playlist.value.map { if (it.id == updatedTrack.id) updatedTrack else it }
+        _playlist.value = list
+        if (_currentTrack.value?.id == updatedTrack.id) {
+            _currentTrack.value = updatedTrack
+            onTrackStateChanged?.invoke(updatedTrack, _isPlaying.value)
+        }
+    }
+
     fun setPlaybackSpeed(speed: Float) {
         _playbackSpeed.value = speed
         applySpeed(speed)

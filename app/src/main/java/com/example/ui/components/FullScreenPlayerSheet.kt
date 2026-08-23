@@ -33,8 +33,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -45,6 +47,8 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -86,6 +90,7 @@ import com.example.R
 import com.example.model.Track
 import com.example.model.TrackSource
 import com.example.player.RepeatMode
+import com.example.util.TrackCoverImage
 import com.example.ui.theme.AccentCyan
 import com.example.ui.theme.ImmersiveCardBorder
 import com.example.ui.theme.ImmersiveDarkBg
@@ -112,6 +117,9 @@ fun FullScreenPlayerSheet(
     repeatMode: RepeatMode,
     sleepTimerSeconds: Int?,
     visualizerAmplitudes: List<Float>,
+    isVisualizerVisible: Boolean = false,
+    onToggleVisualizer: () -> Unit = {},
+    onOpenContextMenu: () -> Unit = {},
     onDismiss: () -> Unit,
     onTogglePlay: () -> Unit,
     onSeek: (Long) -> Unit,
@@ -178,7 +186,7 @@ fun FullScreenPlayerSheet(
                     ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Collapse Player",
+                            contentDescription = "Свернуть плеер",
                             tint = ImmersiveTextPrimary,
                             modifier = Modifier.size(32.dp)
                         )
@@ -187,9 +195,9 @@ fun FullScreenPlayerSheet(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = when (track.source) {
-                                TrackSource.STREAM -> "STREAMING AUDIO"
-                                TrackSource.PODCAST -> "PLAYING PODCAST"
-                                TrackSource.LOCAL -> "DEVICE AUDIO FILE"
+                                TrackSource.STREAM -> "ОНЛАЙН ПОТОК"
+                                TrackSource.PODCAST -> "ПОДКАСТ"
+                                TrackSource.LOCAL -> "ФАЙЛ С УСТРОЙСТВА"
                             },
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = ImmersiveLavenderAccent,
@@ -209,10 +217,10 @@ fun FullScreenPlayerSheet(
                     }
 
                     Box {
-                        IconButton(onClick = { showMenu = true }) {
+                        IconButton(onClick = onOpenContextMenu) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More Options",
+                                contentDescription = "Меню трека",
                                 tint = ImmersiveTextPrimary
                             )
                         }
@@ -223,7 +231,7 @@ fun FullScreenPlayerSheet(
                             modifier = Modifier.background(ImmersiveSurfaceDark)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Equalizer & Sound FX", color = ImmersiveTextPrimary) },
+                                text = { Text("Эквалайзер и эффекты", color = ImmersiveTextPrimary) },
                                 onClick = {
                                     showMenu = false
                                     onDismiss()
@@ -232,7 +240,7 @@ fun FullScreenPlayerSheet(
                                 leadingIcon = { Icon(Icons.Default.Equalizer, null, tint = ImmersiveLavenderAccent) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Sleep Timer", color = ImmersiveTextPrimary) },
+                                text = { Text("Таймер сна", color = ImmersiveTextPrimary) },
                                 onClick = {
                                     showMenu = false
                                     onOpenSleepTimer()
@@ -240,7 +248,7 @@ fun FullScreenPlayerSheet(
                                 leadingIcon = { Icon(Icons.Default.Timer, null, tint = ImmersiveLavenderAccent) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Preview Lock Screen Widget", color = ImmersiveTextPrimary) },
+                                text = { Text("Виджет экрана блокировки", color = ImmersiveTextPrimary) },
                                 onClick = {
                                     showMenu = false
                                     onOpenLockScreenPreview()
@@ -254,7 +262,6 @@ fun FullScreenPlayerSheet(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Album Artwork
-                val coverRes = track.coverDrawableRes ?: R.drawable.cover_cyberpunk_1787235201442
                 Card(
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = ImmersiveSurfaceDark),
@@ -265,9 +272,9 @@ fun FullScreenPlayerSheet(
                         .aspectRatio(1f)
                         .shadow(24.dp, RoundedCornerShape(24.dp), ambientColor = ImmersiveLavenderAccent, spotColor = ImmersiveLavenderAccent)
                 ) {
-                    Image(
-                        painter = painterResource(id = coverRes),
-                        contentDescription = "Album Cover",
+                    TrackCoverImage(
+                        track = track,
+                        contentDescription = "Обложка трека",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -275,7 +282,7 @@ fun FullScreenPlayerSheet(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Track Title & Favorite Button
+                // Track Title, Artist & Favorite Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -310,7 +317,7 @@ fun FullScreenPlayerSheet(
                     ) {
                         Icon(
                             imageVector = if (track.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
+                            contentDescription = "В избранное",
                             tint = if (track.isFavorite) ImmersiveLavenderAccent else ImmersiveTextMuted,
                             modifier = Modifier.size(28.dp)
                         )
@@ -319,31 +326,37 @@ fun FullScreenPlayerSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Live Equalizer Visualizer Bars Canvas
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(36.dp)
-                        .padding(horizontal = 4.dp)
+                // Optional Equalizer Live Visualizer Bars (Can be hidden/shown via toggle)
+                AnimatedVisibility(
+                    visible = isVisualizerVisible,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
                 ) {
-                    val barCount = visualizerAmplitudes.size
-                    val spacing = 4.dp.toPx()
-                    val totalSpacing = spacing * (barCount - 1)
-                    val barWidth = (size.width - totalSpacing) / barCount
-                    val maxHeight = size.height
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                            .padding(horizontal = 4.dp, vertical = 4.dp)
+                    ) {
+                        val barCount = visualizerAmplitudes.size
+                        val spacing = 4.dp.toPx()
+                        val totalSpacing = spacing * (barCount - 1)
+                        val barWidth = (size.width - totalSpacing) / barCount
+                        val maxHeight = size.height
 
-                    for (i in 0 until barCount) {
-                        val amplitude = if (isPlaying) visualizerAmplitudes.getOrElse(i) { 0.2f } else 0.08f
-                        val barHeight = (maxHeight * amplitude).coerceAtLeast(4.dp.toPx())
-                        val left = i * (barWidth + spacing)
-                        val top = maxHeight - barHeight
+                        for (i in 0 until barCount) {
+                            val amplitude = if (isPlaying) visualizerAmplitudes.getOrElse(i) { 0.2f } else 0.08f
+                            val barHeight = (maxHeight * amplitude).coerceAtLeast(4.dp.toPx())
+                            val left = i * (barWidth + spacing)
+                            val top = maxHeight - barHeight
 
-                        drawRoundRect(
-                            color = if (isPlaying) ImmersiveLavenderAccent else ImmersiveTrackInactive,
-                            topLeft = Offset(left, top),
-                            size = Size(barWidth, barHeight),
-                            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
-                        )
+                            drawRoundRect(
+                                color = if (isPlaying) ImmersiveLavenderAccent else ImmersiveTrackInactive,
+                                topLeft = Offset(left, top),
+                                size = Size(barWidth, barHeight),
+                                cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
+                            )
+                        }
                     }
                 }
 
@@ -361,9 +374,9 @@ fun FullScreenPlayerSheet(
                         sliderValue = it
                     },
                     onValueChangeFinished = {
-                        isDraggingSlider = false
-                        val targetMs = (sliderValue * duration.coerceAtLeast(1L)).toLong()
+                        val targetMs = (sliderValue * duration).toLong()
                         onSeek(targetMs)
+                        isDraggingSlider = false
                     },
                     colors = SliderDefaults.colors(
                         thumbColor = ImmersiveLavenderLight,
@@ -372,12 +385,14 @@ fun FullScreenPlayerSheet(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("full_player_seek_slider")
+                        .testTag("full_player_slider")
                 )
 
-                // Timestamp counters
+                // Time counters
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
@@ -388,10 +403,9 @@ fun FullScreenPlayerSheet(
                         )
                     )
                     Text(
-                        text = if (duration > 0) formatTime(duration) else "LIVE",
+                        text = if (duration > 0) formatTime(duration) else "--:--",
                         style = MaterialTheme.typography.bodySmall.copy(
-                            color = if (duration > 0) ImmersiveTextMuted else ImmersiveLavenderAccent,
-                            fontWeight = if (duration > 0) FontWeight.Normal else FontWeight.Bold,
+                            color = ImmersiveTextMuted,
                             fontSize = 12.sp
                         )
                     )
@@ -399,7 +413,7 @@ fun FullScreenPlayerSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Primary Playback Controls Row
+                // Media Controls Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -412,39 +426,40 @@ fun FullScreenPlayerSheet(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Shuffle,
-                            contentDescription = "Shuffle",
+                            contentDescription = "Перемешать",
                             tint = if (isShuffle) ImmersiveLavenderAccent else ImmersiveTextMuted,
                             modifier = Modifier.size(24.dp)
                         )
                     }
 
-                    // Prev Button
+                    // Previous Button
                     IconButton(
                         onClick = onPrev,
                         modifier = Modifier.testTag("full_player_prev_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.SkipPrevious,
-                            contentDescription = "Previous Track",
+                            contentDescription = "Предыдущий трек",
                             tint = ImmersiveTextPrimary,
                             modifier = Modifier.size(36.dp)
                         )
                     }
 
                     // Play/Pause Big Button
-                    IconButton(
-                        onClick = onTogglePlay,
+                    Box(
                         modifier = Modifier
-                            .size(66.dp)
-                            .background(ImmersiveLavenderLight, CircleShape)
-                            .shadow(16.dp, CircleShape, spotColor = ImmersiveLavenderAccent)
-                            .testTag("full_player_play_pause_button")
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(ImmersiveLavenderAccent)
+                            .clickable { onTogglePlay() }
+                            .testTag("full_player_play_pause_button"),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (isPlaying) "Pause" else "Play",
-                            tint = ImmersivePurpleDark,
-                            modifier = Modifier.size(36.dp)
+                            contentDescription = if (isPlaying) "Пауза" else "Воспроизведение",
+                            tint = ImmersivePurpleDeep,
+                            modifier = Modifier.size(40.dp)
                         )
                     }
 
@@ -455,7 +470,7 @@ fun FullScreenPlayerSheet(
                     ) {
                         Icon(
                             imageVector = Icons.Default.SkipNext,
-                            contentDescription = "Next Track",
+                            contentDescription = "Следующий трек",
                             tint = ImmersiveTextPrimary,
                             modifier = Modifier.size(36.dp)
                         )
@@ -471,7 +486,7 @@ fun FullScreenPlayerSheet(
                                 RepeatMode.ONE -> Icons.Default.RepeatOne
                                 else -> Icons.Default.Repeat
                             },
-                            contentDescription = "Repeat Mode",
+                            contentDescription = "Режим повтора",
                             tint = if (repeatMode != RepeatMode.OFF) ImmersiveLavenderAccent else ImmersiveTextMuted,
                             modifier = Modifier.size(24.dp)
                         )
@@ -480,7 +495,7 @@ fun FullScreenPlayerSheet(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Bottom Utility Row: Speed, Equalizer, Sleep Timer, Lyrics
+                // Bottom Utility Row: Speed, Lyrics Button, Visualizer Toggle, Equalizer, Sleep Timer, Lock Screen
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -500,12 +515,51 @@ fun FullScreenPlayerSheet(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Icon(Icons.Default.Speed, contentDescription = null, tint = ImmersiveLavenderAccent, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("${playbackSpeed}x", color = ImmersiveLavenderLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
+                    }
+
+                    // Dedicated Button to View Lyrics on "Now Playing" Screen
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (showLyrics) ImmersiveLavenderAccent else ImmersivePillInactive,
+                        border = BorderStroke(1.dp, ImmersiveCardBorder),
+                        modifier = Modifier.clickable { showLyrics = !showLyrics }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Lyrics,
+                                contentDescription = "Текст",
+                                tint = if (showLyrics) ImmersivePurpleDeep else ImmersiveLavenderAccent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Текст",
+                                color = if (showLyrics) ImmersivePurpleDeep else ImmersiveLavenderLight,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Visualizer Toggle (Show / Hide animated equalizer bar graphic)
+                    IconButton(
+                        onClick = onToggleVisualizer,
+                        modifier = Modifier.testTag("full_player_visualizer_toggle")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GraphicEq,
+                            contentDescription = if (isVisualizerVisible) "Скрыть визуализацию" else "Показать визуализацию",
+                            tint = if (isVisualizerVisible) ImmersiveLavenderAccent else ImmersiveTextMuted
+                        )
                     }
 
                     // Equalizer Button
@@ -518,7 +572,7 @@ fun FullScreenPlayerSheet(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Equalizer,
-                            contentDescription = "Equalizer",
+                            contentDescription = "Эквалайзер",
                             tint = ImmersiveLavenderAccent
                         )
                     }
@@ -527,7 +581,7 @@ fun FullScreenPlayerSheet(
                     IconButton(onClick = onOpenSleepTimer) {
                         Icon(
                             imageVector = Icons.Default.Timer,
-                            contentDescription = "Sleep Timer",
+                            contentDescription = "Таймер сна",
                             tint = if (sleepTimerSeconds != null) ImmersiveLavenderAccent else ImmersiveTextMuted
                         )
                     }
@@ -536,7 +590,7 @@ fun FullScreenPlayerSheet(
                     IconButton(onClick = onOpenLockScreenPreview) {
                         Icon(
                             imageVector = Icons.Default.Lock,
-                            contentDescription = "Lock Screen",
+                            contentDescription = "Экран блокировки",
                             tint = ImmersiveTextMuted
                         )
                     }
@@ -544,15 +598,17 @@ fun FullScreenPlayerSheet(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Lyrics / Show Notes Card
-                if (track.lyrics.isNotEmpty()) {
+                // Lyrics Card (Animated Expansion upon button click)
+                AnimatedVisibility(
+                    visible = showLyrics,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
                     Card(
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = ImmersiveSurfaceDark),
                         border = BorderStroke(1.dp, ImmersiveCardBorder),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showLyrics = !showLyrics }
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
@@ -561,32 +617,33 @@ fun FullScreenPlayerSheet(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = if (track.source == TrackSource.PODCAST) "Episode Notes" else "Lyrics & Notes",
+                                    text = if (track.source == TrackSource.PODCAST) "Описание эпизода" else "Текст песни",
                                     fontWeight = FontWeight.Bold,
                                     color = ImmersiveTextPrimary,
                                     fontSize = 16.sp
                                 )
                                 Text(
-                                    text = if (showLyrics) "Hide" else "Show",
+                                    text = "Скрыть",
                                     color = ImmersiveLavenderAccent,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.clickable { showLyrics = false }
                                 )
                             }
 
-                            AnimatedVisibility(
-                                visible = showLyrics,
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut()
-                            ) {
-                                Text(
-                                    text = track.lyrics,
-                                    color = ImmersiveTextSecondary,
-                                    fontSize = 14.sp,
-                                    lineHeight = 22.sp,
-                                    modifier = Modifier.padding(top = 12.dp)
-                                )
+                            val lyricsContent = if (track.lyrics.isNotBlank()) {
+                                track.lyrics
+                            } else {
+                                "Текст песни еще не добавлен для этого трека.\n\nВы можете добавить текст через контекстное меню (кнопка меню ⋮ -> Изменить метаданные)."
                             }
+
+                            Text(
+                                text = lyricsContent,
+                                color = ImmersiveTextSecondary,
+                                fontSize = 15.sp,
+                                lineHeight = 24.sp,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
                         }
                     }
                 }

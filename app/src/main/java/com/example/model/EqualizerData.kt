@@ -1,15 +1,15 @@
 package com.example.model
 
 enum class EqPreset(val displayName: String) {
-    FLAT("Flat / Normal"),
-    BASS_BOOST("Bass Booster"),
-    ROCK("Rock & Metal"),
-    POP("Pop Hits"),
-    JAZZ("Jazz & Blues"),
-    ELECTRONIC("Electronic / Dance"),
-    CLASSICAL("Classical Acoustic"),
-    VOCAL("Vocal Clarity"),
-    CUSTOM("Custom User")
+    FLAT("Обычный"),
+    BASS_BOOST("Усиление баса"),
+    ROCK("Рок"),
+    POP("Поп"),
+    JAZZ("Джаз"),
+    ELECTRONIC("Электроника"),
+    CLASSICAL("Классика"),
+    VOCAL("Вокал"),
+    CUSTOM("Свой")
 }
 
 data class EqualizerState(

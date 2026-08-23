@@ -52,11 +52,15 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.model.Track
 import com.example.ui.components.AddCustomStreamDialog
+import com.example.ui.components.ConfirmDeleteTrackDialog
 import com.example.ui.components.CreatePlaylistDialog
+import com.example.ui.components.EditTrackDialog
 import com.example.ui.components.FullScreenPlayerSheet
 import com.example.ui.components.LockScreenPreviewOverlay
 import com.example.ui.components.MiniPlayerBar
 import com.example.ui.components.SleepTimerDialog
+import com.example.ui.components.TrackContextMenuBottomSheet
+import com.example.ui.components.TrackLyricsDialog
 import com.example.ui.screens.EqualizerScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LibraryScreen
@@ -131,6 +135,7 @@ fun MainAppContent(viewModel: MusicViewModel) {
     val isPlayerExpanded by viewModel.isPlayerExpanded.collectAsState()
     val isLockScreenPreviewActive by viewModel.isLockScreenPreviewActive.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+    val isVisualizerVisible by viewModel.isVisualizerVisible.collectAsState()
 
     val currentTrack by viewModel.currentTrack.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
@@ -158,6 +163,11 @@ fun MainAppContent(viewModel: MusicViewModel) {
     val showAddCustomStreamDialog by viewModel.showAddCustomStreamDialog.collectAsState()
     val showSleepTimerDialog by viewModel.showSleepTimerDialog.collectAsState()
     val selectedPlaylistDetail by viewModel.selectedPlaylistForDetail.collectAsState()
+
+    val selectedTrackForMenu by viewModel.selectedTrackForMenu.collectAsState()
+    val selectedTrackForEdit by viewModel.selectedTrackForEdit.collectAsState()
+    val selectedTrackForLyrics by viewModel.selectedTrackForLyrics.collectAsState()
+    val selectedTrackForDelete by viewModel.selectedTrackForDelete.collectAsState()
 
     val allTracksCombined = (viewModel.featuredStreams + localTracks + favoriteTracks).distinctBy { it.id }
 
@@ -198,10 +208,10 @@ fun MainAppContent(viewModel: MusicViewModel) {
                         icon = {
                             Icon(
                                 if (currentTab == NavigationTab.HOME) Icons.Filled.Home else Icons.Outlined.Home,
-                                contentDescription = "Home"
+                                contentDescription = "Главная"
                             )
                         },
-                        label = { Text("Home", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        label = { Text("Главная", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = navItemColors,
                         modifier = Modifier.testTag("nav_item_home")
                     )
@@ -212,10 +222,10 @@ fun MainAppContent(viewModel: MusicViewModel) {
                         icon = {
                             Icon(
                                 if (currentTab == NavigationTab.SEARCH) Icons.Filled.Search else Icons.Outlined.Search,
-                                contentDescription = "Search"
+                                contentDescription = "Поиск"
                             )
                         },
-                        label = { Text("Search", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        label = { Text("Поиск", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = navItemColors,
                         modifier = Modifier.testTag("nav_item_search")
                     )
@@ -226,10 +236,10 @@ fun MainAppContent(viewModel: MusicViewModel) {
                         icon = {
                             Icon(
                                 if (currentTab == NavigationTab.LIBRARY) Icons.Filled.LibraryMusic else Icons.Outlined.LibraryMusic,
-                                contentDescription = "Your Library"
+                                contentDescription = "Медиатека"
                             )
                         },
-                        label = { Text("Library", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        label = { Text("Медиатека", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = navItemColors,
                         modifier = Modifier.testTag("nav_item_library")
                     )
@@ -240,10 +250,10 @@ fun MainAppContent(viewModel: MusicViewModel) {
                         icon = {
                             Icon(
                                 if (currentTab == NavigationTab.PODCASTS) Icons.Filled.Mic else Icons.Outlined.Mic,
-                                contentDescription = "Podcasts"
+                                contentDescription = "Подкасты"
                             )
                         },
-                        label = { Text("Podcasts", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        label = { Text("Подкасты", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = navItemColors,
                         modifier = Modifier.testTag("nav_item_podcasts")
                     )
@@ -254,10 +264,10 @@ fun MainAppContent(viewModel: MusicViewModel) {
                         icon = {
                             Icon(
                                 if (currentTab == NavigationTab.EQUALIZER) Icons.Filled.Equalizer else Icons.Outlined.Equalizer,
-                                contentDescription = "Equalizer"
+                                contentDescription = "Эквалайзер"
                             )
                         },
-                        label = { Text("Equalizer", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        label = { Text("Звук", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = navItemColors,
                         modifier = Modifier.testTag("nav_item_equalizer")
                     )
@@ -268,35 +278,31 @@ fun MainAppContent(viewModel: MusicViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            // Ambient glowing background overlay
+            // Background dynamic atmospheric radial gradients
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val width = size.width
                 val height = size.height
 
-                // Top-left lavender glow (#D0BCFF blur effect)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            ImmersiveLavenderAccent.copy(alpha = 0.18f),
-                            ImmersiveLavenderAccent.copy(alpha = 0.06f),
+                            Color(0xFF3B2D71).copy(alpha = 0.25f),
                             Color.Transparent
                         ),
-                        center = Offset(width * 0.05f, height * 0.05f),
+                        center = Offset(width * 0.1f, height * 0.1f),
                         radius = width * 0.85f
                     ),
                     radius = width * 0.85f,
-                    center = Offset(width * 0.05f, height * 0.05f)
+                    center = Offset(width * 0.1f, height * 0.1f)
                 )
 
-                // Bottom-right deep purple glow (#381E72 blur effect)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            ImmersivePurpleDeep.copy(alpha = 0.35f),
-                            ImmersivePurpleDeep.copy(alpha = 0.10f),
+                            Color(0xFF1E3A5F).copy(alpha = 0.20f),
                             Color.Transparent
                         ),
                         center = Offset(width * 0.95f, height * 0.85f),
@@ -326,6 +332,9 @@ fun MainAppContent(viewModel: MusicViewModel) {
                         },
                         onOpenCloudSync = {
                             viewModel.setTab(NavigationTab.LIBRARY)
+                        },
+                        onOpenTrackMenu = { track ->
+                            viewModel.openTrackContextMenu(track)
                         }
                     )
                 }
@@ -340,7 +349,10 @@ fun MainAppContent(viewModel: MusicViewModel) {
                         onQueryChange = { viewModel.setSearchQuery(it) },
                         onFilterChange = { viewModel.setSearchFilter(it) },
                         onPlayTrack = { track -> viewModel.playTrack(track, allTracksCombined) },
-                        onOpenAddCustomStream = { viewModel.toggleAddCustomStreamDialog(true) }
+                        onOpenAddCustomStream = { viewModel.toggleAddCustomStreamDialog(true) },
+                        onOpenTrackMenu = { track ->
+                            viewModel.openTrackContextMenu(track)
+                        }
                     )
                 }
 
@@ -362,7 +374,10 @@ fun MainAppContent(viewModel: MusicViewModel) {
                         onScanDeviceAudio = { viewModel.scanDeviceAudio() },
                         onDeletePlaylist = { viewModel.deletePlaylist(it) },
                         onBackupCloud = { viewModel.backupToCloud() },
-                        onRestoreCloud = { viewModel.restoreFromCloud() }
+                        onRestoreCloud = { viewModel.restoreFromCloud() },
+                        onOpenTrackMenu = { track ->
+                            viewModel.openTrackContextMenu(track)
+                        }
                     )
                 }
 
@@ -419,6 +434,9 @@ fun MainAppContent(viewModel: MusicViewModel) {
             repeatMode = repeatMode,
             sleepTimerSeconds = sleepTimerSeconds,
             visualizerAmplitudes = visualizerAmplitudes,
+            isVisualizerVisible = isVisualizerVisible,
+            onToggleVisualizer = { viewModel.toggleVisualizerVisible() },
+            onOpenContextMenu = { currentTrack?.let { viewModel.openTrackContextMenu(it) } },
             onDismiss = { viewModel.setPlayerExpanded(false) },
             onTogglePlay = { viewModel.togglePlayPause() },
             onSeek = { viewModel.seekTo(it) },
@@ -433,6 +451,58 @@ fun MainAppContent(viewModel: MusicViewModel) {
             },
             onOpenSleepTimer = { viewModel.toggleSleepTimerDialog(true) },
             onOpenLockScreenPreview = { viewModel.setLockScreenPreviewActive(true) }
+        )
+    }
+
+    // Track Context Menu Bottom Sheet
+    selectedTrackForMenu?.let { menuTrack ->
+        TrackContextMenuBottomSheet(
+            track = menuTrack,
+            isInQueue = viewModel.isTrackInQueue(menuTrack.id),
+            onDismiss = { viewModel.dismissTrackContextMenu() },
+            onPlayNext = { viewModel.playNext(menuTrack) },
+            onAddToQueue = { viewModel.addToQueue(menuTrack) },
+            onRemoveFromQueue = { viewModel.removeFromQueue(menuTrack) },
+            onToggleFavorite = { viewModel.toggleFavorite(menuTrack) },
+            onGoToArtist = { artistName ->
+                viewModel.setSearchQuery(artistName)
+                viewModel.setTab(NavigationTab.SEARCH)
+            },
+            onGoToAlbum = { albumName ->
+                viewModel.setSearchQuery(albumName)
+                viewModel.setTab(NavigationTab.SEARCH)
+            },
+            onEditTrack = { viewModel.openEditTrackDialog(menuTrack) },
+            onDeleteTrack = { viewModel.openDeleteTrackDialog(menuTrack) },
+            onShowLyrics = { viewModel.openLyricsDialog(menuTrack) }
+        )
+    }
+
+    // Edit Track Dialog
+    selectedTrackForEdit?.let { trackToEdit ->
+        EditTrackDialog(
+            track = trackToEdit,
+            onDismiss = { viewModel.dismissEditTrackDialog() },
+            onConfirm = { title, artist, album, genre, lyrics ->
+                viewModel.saveTrackMetadata(trackToEdit, title, artist, album, genre, lyrics)
+            }
+        )
+    }
+
+    // Track Lyrics Dialog
+    selectedTrackForLyrics?.let { trackForLyrics ->
+        TrackLyricsDialog(
+            track = trackForLyrics,
+            onDismiss = { viewModel.dismissLyricsDialog() }
+        )
+    }
+
+    // Confirm Delete Track Dialog
+    selectedTrackForDelete?.let { trackToDelete ->
+        ConfirmDeleteTrackDialog(
+            track = trackToDelete,
+            onDismiss = { viewModel.dismissDeleteTrackDialog() },
+            onConfirm = { viewModel.deleteTrack(trackToDelete) }
         )
     }
 

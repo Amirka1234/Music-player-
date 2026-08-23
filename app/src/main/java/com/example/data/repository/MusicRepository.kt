@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import com.example.R
+import com.example.data.local.CustomPodcastEntity
 import com.example.data.local.MusicDao
 import com.example.data.local.PlaylistEntity
 import com.example.data.local.PlaylistTrackCrossRef
@@ -18,8 +19,12 @@ import com.example.model.Track
 import com.example.model.TrackSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class MusicRepository(
@@ -27,7 +32,7 @@ class MusicRepository(
     private val musicDao: MusicDao
 ) {
 
-    // Default built-in curated online streams & sample tracks with working audio URLs
+    // Default built-in curated online music streams & radio
     val defaultFeaturedTracks: List<Track> = listOf(
         Track(
             id = "stream_lofi_1",
@@ -91,72 +96,49 @@ class MusicRepository(
         )
     )
 
-    // Curated Podcasts
-    val podcastShows: List<PodcastShow> = listOf(
-        PodcastShow(
-            id = "show_tech_pulse",
-            title = "Tech Wave & AI Frontier",
-            host = "Alex Morgan & Elena Rostova",
-            description = "Deep dives into cutting edge tech, Android development, AI agents, mobile architecture and modern software craftsmanship.",
-            coverRes = R.drawable.cover_podcast_1787235232773,
-            category = "Technology",
-            episodes = listOf(
-                PodcastEpisode(
-                    id = "ep_tech_101",
-                    showId = "show_tech_pulse",
-                    showTitle = "Tech Wave & AI Frontier",
-                    title = "EP 101: Modern Android Architecture & Jetpack Compose",
-                    description = "In this episode, we discuss modern reactive UI in Compose, Room local databases, Audio streaming services and building delightful Material 3 audio applications.",
-                    durationMs = 1800000L, // 30 mins
-                    audioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-                    publishedDate = "Aug 18, 2026",
-                    coverRes = R.drawable.cover_podcast_1787235232773
-                ),
-                PodcastEpisode(
-                    id = "ep_tech_102",
-                    showId = "show_tech_pulse",
-                    showTitle = "Tech Wave & AI Frontier",
-                    title = "EP 102: The Future of Cloud Sync and Spatial Audio",
-                    description = "How audio equalizers, 3D virtualizers and multi-device cloud synchronization are changing user experience on modern mobile devices.",
-                    durationMs = 2100000L,
-                    audioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-                    publishedDate = "Aug 12, 2026",
-                    coverRes = R.drawable.cover_podcast_1787235232773
-                )
-            )
-        ),
-        PodcastShow(
-            id = "show_music_mastery",
-            title = "Sound Design & Equalizer Masters",
-            host = "Marcus Vane",
-            description = "Exploring acoustic frequency bands, bass boost acoustics, mastering curves, and how equalizers transform audio perception.",
-            coverRes = R.drawable.cover_chillhop_1787235245557,
-            category = "Music Production",
-            episodes = listOf(
-                PodcastEpisode(
-                    id = "ep_music_201",
-                    showId = "show_music_mastery",
-                    showTitle = "Sound Design & Equalizer Masters",
-                    title = "EP 01: Mastering the 5-Band Graphic Equalizer",
-                    description = "A practical guide to shaping 60Hz sub-bass, 230Hz punch, 910Hz vocal warmth, and sparkling 14kHz air.",
-                    durationMs = 1500000L,
-                    audioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
-                    publishedDate = "Aug 15, 2026",
-                    coverRes = R.drawable.cover_chillhop_1787235245557
-                )
-            )
-        )
-    )
-
-    // Flow of playlists from Room
-    val playlistsFlow: Flow<List<Playlist>> = musicDao.getAllPlaylists().map { entities ->
+    // User-added custom podcasts from Room database (no hardcoded pre-packaged podcasts)
+    val customPodcastsFlow: Flow<List<PodcastShow>> = musicDao.getAllCustomPodcasts().map { entities ->
         entities.map { entity ->
+            val dateStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(entity.addedAt))
+            PodcastShow(
+                id = entity.id,
+                title = entity.title,
+                host = entity.host.ifBlank { "Пользовательский поток" },
+                description = entity.description.ifBlank { "Аудиоподкаст добавлен по прямой ссылке" },
+                coverRes = entity.coverRes ?: R.drawable.cover_podcast_1787235232773,
+                category = entity.category.ifBlank { "Подкаст" },
+                episodes = listOf(
+                    PodcastEpisode(
+                        id = "ep_${entity.id}",
+                        showId = entity.id,
+                        showTitle = entity.title,
+                        title = entity.title,
+                        description = entity.description.ifBlank { "Прямой поток: ${entity.url}" },
+                        durationMs = 0L,
+                        audioUrl = entity.url,
+                        publishedDate = dateStr,
+                        coverRes = entity.coverRes ?: R.drawable.cover_podcast_1787235232773
+                    )
+                )
+            )
+        }
+    }
+
+    // Reactive flow of playlists from Room combined with playlist track cross-references
+    val playlistsFlow: Flow<List<Playlist>> = combine(
+        musicDao.getAllPlaylists(),
+        musicDao.getAllPlaylistTrackRefs()
+    ) { playlists, refs ->
+        val refsByPlaylist = refs.groupBy { it.playlistId }
+        playlists.map { entity ->
+            val trackIds = refsByPlaylist[entity.id]?.map { it.trackId } ?: emptyList()
             Playlist(
                 id = entity.id,
                 title = entity.title,
                 description = entity.description,
                 coverRes = entity.coverRes ?: R.drawable.cover_cyberpunk_1787235201442,
                 coverUrl = entity.coverUrl,
+                trackIds = trackIds,
                 isCloudSynced = entity.isCloudSynced,
                 createdAt = entity.createdAt
             )
@@ -182,7 +164,8 @@ class MusicRepository(
                     else -> TrackSource.STREAM
                 },
                 isFavorite = true,
-                genre = entity.genre
+                genre = entity.genre,
+                lyrics = entity.lyrics
             )
         }
     }
@@ -196,6 +179,7 @@ class MusicRepository(
                 MediaStore.Audio.Media.TITLE,
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media.ALBUM,
+                MediaStore.Audio.Media.ALBUM_ID,
                 MediaStore.Audio.Media.DURATION
             )
             val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
@@ -218,15 +202,23 @@ class MusicRepository(
                 val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
                 val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
                 val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+                val albumIdColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)
                 val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
 
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idColumn)
-                    val title = cursor.getString(titleColumn) ?: "Unknown Track"
-                    val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
-                    val album = cursor.getString(albumColumn) ?: "Local Music"
+                    val title = cursor.getString(titleColumn) ?: "Без названия"
+                    val artist = cursor.getString(artistColumn) ?: "Неизвестный исполнитель"
+                    val album = cursor.getString(albumColumn) ?: "Аудиофайл"
                     val duration = cursor.getLong(durationColumn)
                     val contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id).toString()
+
+                    val albumId = if (albumIdColumn != -1) cursor.getLong(albumIdColumn) else -1L
+                    val albumArtUri = if (albumId > 0) {
+                        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId).toString()
+                    } else {
+                        contentUri
+                    }
 
                     tracks.add(
                         Track(
@@ -236,9 +228,10 @@ class MusicRepository(
                             album = album,
                             durationMs = duration,
                             localUri = contentUri,
+                            coverUrl = albumArtUri,
                             coverDrawableRes = R.drawable.cover_chillhop_1787235245557,
                             source = TrackSource.LOCAL,
-                            genre = "Device Audio"
+                            genre = "Локальный файл"
                         )
                     )
                 }
@@ -252,27 +245,27 @@ class MusicRepository(
             tracks.add(
                 Track(
                     id = "local_demo_1",
-                    title = "Device Audio - Acoustic Sunset.mp3",
-                    artist = "Phone Storage / Music",
-                    album = "Internal SD Card",
+                    title = "Акустический закат.mp3",
+                    artist = "Память устройства / Music",
+                    album = "Внутренняя память",
                     durationMs = 210000L,
                     streamUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
                     coverDrawableRes = R.drawable.cover_chillhop_1787235245557,
                     source = TrackSource.LOCAL,
-                    genre = "Local MP3 File"
+                    genre = "Локальный MP3"
                 )
             )
             tracks.add(
                 Track(
                     id = "local_demo_2",
-                    title = "Device Audio - Night Drive.mp3",
-                    artist = "Phone Storage / Downloads",
-                    album = "Internal SD Card",
+                    title = "Ночной город.mp3",
+                    artist = "Память устройства / Downloads",
+                    album = "Внутренняя память",
                     durationMs = 195000L,
                     streamUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
                     coverDrawableRes = R.drawable.cover_cyberpunk_1787235201442,
                     source = TrackSource.LOCAL,
-                    genre = "Local MP3 File"
+                    genre = "Локальный MP3"
                 )
             )
         }
@@ -285,7 +278,7 @@ class MusicRepository(
         val playlist = PlaylistEntity(
             id = id,
             title = title,
-            description = description.ifEmpty { "Created with Spotify Music" },
+            description = description.ifEmpty { "Создано в Spotify Music" },
             coverRes = R.drawable.cover_cyberpunk_1787235201442,
             isCloudSynced = true,
             createdAt = System.currentTimeMillis()
@@ -298,12 +291,58 @@ class MusicRepository(
         musicDao.deletePlaylist(playlistId)
     }
 
-    suspend fun addTrackToPlaylist(playlistId: String, trackId: String) = withContext(Dispatchers.IO) {
-        musicDao.insertPlaylistTrack(PlaylistTrackCrossRef(playlistId, trackId))
+    suspend fun addTrackToPlaylist(playlistId: String, track: Track) = withContext(Dispatchers.IO) {
+        saveOrUpdateTrack(track)
+        musicDao.insertPlaylistTrack(PlaylistTrackCrossRef(playlistId, track.id))
     }
 
     suspend fun removeTrackFromPlaylist(playlistId: String, trackId: String) = withContext(Dispatchers.IO) {
         musicDao.removeTrackFromPlaylist(playlistId, trackId)
+    }
+
+    suspend fun deleteTrack(trackId: String) = withContext(Dispatchers.IO) {
+        musicDao.deleteTrack(trackId)
+        musicDao.removeTrackFromAllPlaylists(trackId)
+    }
+
+    suspend fun addCustomPodcast(title: String, host: String, url: String, category: String = "Подкаст", description: String = ""): String = withContext(Dispatchers.IO) {
+        val id = "podcast_${UUID.randomUUID()}"
+        val entity = CustomPodcastEntity(
+            id = id,
+            title = title,
+            host = host.ifBlank { "Ведущий подкаста" },
+            url = url,
+            description = description.ifBlank { "Аудиопоток: $url" },
+            coverRes = R.drawable.cover_podcast_1787235232773,
+            category = category.ifBlank { "Подкаст" },
+            addedAt = System.currentTimeMillis()
+        )
+        musicDao.insertCustomPodcast(entity)
+        id
+    }
+
+    suspend fun deleteCustomPodcast(podcastId: String) = withContext(Dispatchers.IO) {
+        musicDao.deleteCustomPodcast(podcastId)
+    }
+
+    suspend fun saveOrUpdateTrack(track: Track) = withContext(Dispatchers.IO) {
+        val entity = SavedTrackEntity(
+            id = track.id,
+            title = track.title,
+            artist = track.artist,
+            album = track.album,
+            durationMs = track.durationMs,
+            streamUrl = track.streamUrl,
+            localUri = track.localUri,
+            coverDrawableRes = track.coverDrawableRes,
+            coverUrl = track.coverUrl,
+            source = track.source.name,
+            isFavorite = track.isFavorite,
+            genre = track.genre,
+            lyrics = track.lyrics,
+            addedAt = System.currentTimeMillis()
+        )
+        musicDao.saveTrack(entity)
     }
 
     fun getTrackIdsForPlaylist(playlistId: String): Flow<List<String>> {
@@ -325,6 +364,7 @@ class MusicRepository(
             source = track.source.name,
             isFavorite = newFav,
             genre = track.genre,
+            lyrics = track.lyrics,
             addedAt = System.currentTimeMillis()
         )
         musicDao.saveTrack(entity)
@@ -332,26 +372,30 @@ class MusicRepository(
     }
 
     suspend fun initializeDefaultPlaylistsIfEmpty() = withContext(Dispatchers.IO) {
-        // Pre-populate with default Spotify playlists for instant first-run experience
+        // Pre-populate with default clean music playlists
+        for (tr in defaultFeaturedTracks) {
+            saveOrUpdateTrack(tr)
+        }
+
         val defaultPlaylists = listOf(
             PlaylistEntity(
                 id = "pl_top_hits",
                 title = "Today's Top Hits 2026",
-                description = "The hottest streams, synthwave & electronic bangers right now.",
+                description = "Лучшие электронные и синтвейв треки прямо сейчас.",
                 coverRes = R.drawable.cover_cyberpunk_1787235201442,
                 isCloudSynced = true
             ),
             PlaylistEntity(
                 id = "pl_chill_lofi",
                 title = "Lo-Fi Beats & Relax",
-                description = "Cozy vibes, coffee shop acoustics, and relaxing ambient streams.",
+                description = "Уютные биты для отдыха, кофе и атмосферных вечеров.",
                 coverRes = R.drawable.cover_lofi_1787235216505,
                 isCloudSynced = true
             ),
             PlaylistEntity(
                 id = "pl_deep_focus",
                 title = "Deep Focus & Study",
-                description = "Acoustic instruments and calm beats for coding and concentration.",
+                description = "Акустические мелодии для концентрации и продуктивной работы.",
                 coverRes = R.drawable.cover_chillhop_1787235245557,
                 isCloudSynced = true
             )
@@ -361,7 +405,7 @@ class MusicRepository(
             musicDao.insertPlaylist(pl)
         }
 
-        // Add some default tracks to playlists
+        // Add music tracks to playlists (pure music streams only)
         musicDao.insertPlaylistTrack(PlaylistTrackCrossRef("pl_top_hits", "stream_synth_2", 0))
         musicDao.insertPlaylistTrack(PlaylistTrackCrossRef("pl_top_hits", "stream_edm_4", 1))
         musicDao.insertPlaylistTrack(PlaylistTrackCrossRef("pl_chill_lofi", "stream_lofi_1", 0))
@@ -369,3 +413,4 @@ class MusicRepository(
         musicDao.insertPlaylistTrack(PlaylistTrackCrossRef("pl_deep_focus", "stream_chill_3", 0))
     }
 }
+

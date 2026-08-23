@@ -35,6 +35,7 @@ data class SavedTrackEntity(
     val source: String = "STREAM",
     val isFavorite: Boolean = false,
     val genre: String = "Various",
+    val lyrics: String = "",
     val addedAt: Long = System.currentTimeMillis()
 )
 
@@ -46,3 +47,16 @@ data class PodcastProgressEntity(
     val isCompleted: Boolean,
     val lastListenedAt: Long = System.currentTimeMillis()
 )
+
+@Entity(tableName = "custom_podcasts")
+data class CustomPodcastEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val host: String,
+    val url: String,
+    val description: String = "",
+    val coverRes: Int? = null,
+    val category: String = "Подкаст",
+    val addedAt: Long = System.currentTimeMillis()
+)
+

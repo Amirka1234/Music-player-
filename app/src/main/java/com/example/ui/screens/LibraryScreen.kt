@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -69,6 +70,7 @@ import com.example.model.CloudSyncData
 import com.example.model.Playlist
 import com.example.model.Track
 import com.example.model.TrackSource
+import com.example.util.TrackCoverImage
 import com.example.ui.theme.AccentCyan
 import com.example.ui.theme.ImmersiveCardBorder
 import com.example.ui.theme.ImmersiveLavenderAccent
@@ -99,10 +101,11 @@ fun LibraryScreen(
     onDeletePlaylist: (Playlist) -> Unit,
     onBackupCloud: () -> Unit,
     onRestoreCloud: () -> Unit,
+    onOpenTrackMenu: (Track) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var selectedSection by remember { mutableStateOf("Playlists") }
-    val sections = listOf("Playlists", "Local MP3s", "Favorites", "Cloud Sync")
+    var selectedSection by remember { mutableStateOf("Плейлисты") }
+    val sections = listOf("Плейлисты", "Локальные MP3", "Избранное", "Облако")
 
     // If viewing a playlist detail
     if (selectedPlaylistDetail != null) {
@@ -113,6 +116,7 @@ fun LibraryScreen(
             isPlaying = isPlaying,
             onBack = { onSelectPlaylistDetail(null) },
             onPlayTrack = onPlayTrack,
+            onOpenTrackMenu = onOpenTrackMenu,
             onDelete = {
                 onDeletePlaylist(selectedPlaylistDetail)
                 onSelectPlaylistDetail(null)
@@ -138,40 +142,29 @@ fun LibraryScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Your Library",
+                    text = "Ваша медиатека",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 )
 
-                if (selectedSection == "Playlists") {
-                    IconButton(
-                        onClick = onOpenCreatePlaylist,
-                        modifier = Modifier
-                            .size(38.dp)
-                            .background(ImmersiveLavenderAccent, CircleShape)
-                            .testTag("create_playlist_fab")
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Create Playlist", tint = ImmersivePurpleDeep)
-                    }
-                } else if (selectedSection == "Local MP3s") {
-                    IconButton(
-                        onClick = onScanDeviceAudio,
-                        modifier = Modifier.testTag("scan_device_audio_button")
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Scan Audio", tint = ImmersiveLavenderAccent)
-                    }
+                IconButton(onClick = onOpenCreatePlaylist) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Создать плейлист",
+                        tint = ImmersiveLavenderAccent
+                    )
                 }
             }
         }
 
-        // Section Tabs
+        // Section Tabs Filter Chips
         item {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 14.dp)
             ) {
                 items(sections) { section ->
                     val isSelected = selectedSection == section
@@ -195,7 +188,7 @@ fun LibraryScreen(
 
         // Section Content
         when (selectedSection) {
-            "Playlists" -> {
+            "Плейлисты", "Playlists" -> {
                 // Create Playlist Card
                 item {
                     Card(
@@ -222,13 +215,13 @@ fun LibraryScreen(
                             Spacer(modifier = Modifier.width(14.dp))
                             Column {
                                 Text(
-                                    "Create Playlist",
+                                    "Создать плейлист",
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 16.sp
                                 )
                                 Text(
-                                    "Build custom mix of streams and songs",
+                                    "Свой микс из треков и радиостанций",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp
                                 )
@@ -245,7 +238,7 @@ fun LibraryScreen(
                 }
             }
 
-            "Local MP3s" -> {
+            "Локальные MP3", "Local MP3s" -> {
                 item {
                     Card(
                         shape = RoundedCornerShape(16.dp),
@@ -263,13 +256,13 @@ fun LibraryScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    "Device Storage (${localTracks.size} tracks)",
+                                    "Память устройства (${localTracks.size} треков)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    "Internal phone memory and SD card MP3s",
+                                    "Музыка из памяти телефона и SD-карты",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -282,7 +275,7 @@ fun LibraryScreen(
                                     colors = ButtonDefaults.buttonColors(containerColor = ImmersiveLavenderAccent),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                 ) {
-                                    Text("Scan", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text("Сканировать", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
                             }
                         }
@@ -293,12 +286,13 @@ fun LibraryScreen(
                     TrackItemRow(
                         track = track,
                         isCurrentlyPlaying = currentPlayingTrack?.id == track.id && isPlaying,
-                        onClick = { onPlayTrack(track, localTracks) }
+                        onClick = { onPlayTrack(track, localTracks) },
+                        onMenuClick = { onOpenTrackMenu(track) }
                     )
                 }
             }
 
-            "Favorites" -> {
+            "Избранное", "Favorites" -> {
                 if (favoriteTracks.isEmpty()) {
                     item {
                         Column(
@@ -309,9 +303,9 @@ fun LibraryScreen(
                         ) {
                             Icon(Icons.Default.Favorite, contentDescription = null, tint = ImmersiveLavenderAccent, modifier = Modifier.size(56.dp))
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("No Favorite Tracks Yet", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
+                            Text("Пока нет избранных треков", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                             Text(
-                                "Tap the heart icon on any song or stream to save it here.",
+                                "Нажмите значок сердечка на треке, чтобы добавить его сюда.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -323,13 +317,14 @@ fun LibraryScreen(
                         TrackItemRow(
                             track = track,
                             isCurrentlyPlaying = currentPlayingTrack?.id == track.id && isPlaying,
-                            onClick = { onPlayTrack(track, favoriteTracks) }
+                            onClick = { onPlayTrack(track, favoriteTracks) },
+                            onMenuClick = { onOpenTrackMenu(track) }
                         )
                     }
                 }
             }
 
-            "Cloud Sync" -> {
+            "Облако", "Cloud Sync" -> {
                 item {
                     CloudSyncDashboard(
                         data = cloudSyncData,
@@ -376,28 +371,15 @@ private fun PlaylistItemRow(
                     text = playlist.title,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 16.sp,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "${playlist.trackIds.size} треков • ${playlist.description}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (playlist.isCloudSynced) {
-                        Icon(
-                            Icons.Default.CloudDone,
-                            contentDescription = "Synced",
-                            tint = ImmersiveLavenderAccent,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                    Text(
-                        text = "Playlist • ${playlist.description}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
 
             Icon(
@@ -413,7 +395,8 @@ private fun PlaylistItemRow(
 private fun TrackItemRow(
     track: Track,
     isCurrentlyPlaying: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onMenuClick: () -> Unit = {}
 ) {
     Surface(
         color = Color.Transparent,
@@ -426,10 +409,8 @@ private fun TrackItemRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            val cover = track.coverDrawableRes ?: R.drawable.cover_chillhop_1787235245557
-            Image(
-                painter = painterResource(id = cover),
-                contentDescription = null,
+            TrackCoverImage(
+                track = track,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(50.dp)
@@ -448,7 +429,7 @@ private fun TrackItemRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${track.artist} • ${track.album.ifEmpty { "Local File" }}",
+                    text = "${track.artist} • ${track.album.ifEmpty { "Аудиофайл" }}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     maxLines = 1,
@@ -456,10 +437,18 @@ private fun TrackItemRow(
                 )
             }
 
+            IconButton(onClick = onMenuClick) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Меню трека",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             IconButton(onClick = onClick) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
+                    contentDescription = "Воспроизвести",
                     tint = if (isCurrentlyPlaying) ImmersiveLavenderAccent else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -476,6 +465,7 @@ private fun PlaylistDetailView(
     onBack: () -> Unit,
     onPlayTrack: (Track, List<Track>) -> Unit,
     onDelete: () -> Unit,
+    onOpenTrackMenu: (Track) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val playlistTracks = allTracks.take(4)
@@ -495,11 +485,11 @@ private fun PlaylistDetailView(
                     .padding(16.dp)
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Назад", tint = MaterialTheme.colorScheme.onBackground)
                 }
-                Text("Playlist", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground)
+                Text("Плейлист", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground)
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -550,7 +540,7 @@ private fun PlaylistDetailView(
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, tint = ImmersivePurpleDeep)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Play Playlist", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
+                    Text("Воспроизвести", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -558,7 +548,7 @@ private fun PlaylistDetailView(
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Tracks in Playlist (${playlistTracks.size})",
+                text = "Треки в плейлисте (${playlistTracks.size})",
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -570,7 +560,8 @@ private fun PlaylistDetailView(
             TrackItemRow(
                 track = track,
                 isCurrentlyPlaying = currentPlayingTrack?.id == track.id && isPlaying,
-                onClick = { onPlayTrack(track, playlistTracks) }
+                onClick = { onPlayTrack(track, playlistTracks) },
+                onMenuClick = { onOpenTrackMenu(track) }
             )
         }
     }
@@ -583,84 +574,82 @@ private fun CloudSyncDashboard(
     onBackup: () -> Unit,
     onRestore: () -> Unit
 ) {
-    var autoSync by remember { mutableStateOf(data.isAutoSyncEnabled) }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
+        // Status Card
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = ImmersiveSurfaceDark),
             border = BorderStroke(1.dp, ImmersiveCardBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(ImmersiveLavenderAccent, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.CloudDone, contentDescription = null, tint = ImmersivePurpleDeep)
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(ImmersiveLavenderAccent, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.CloudDone, contentDescription = null, tint = ImmersivePurpleDeep)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Облачное хранилище", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Синхронизация профиля и плейлистов", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Cloud Account Active",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = data.accountEmail,
-                            color = ImmersiveLavenderAccent,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+
+                    if (isSyncing) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = ImmersiveLavenderAccent)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                val lastSyncFormatted = remember(data.lastSyncTimestamp) {
+                    val sdf = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault())
+                    sdf.format(java.util.Date(data.lastSyncTimestamp))
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
-                        Text("Connected Device", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(data.syncDeviceId, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("Cloud Status", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(data.cloudStatus, color = ImmersiveLavenderAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    }
+                    Text("Последняя резервная копия:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(lastSyncFormatted, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = ImmersiveLavenderAccent)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Sync, contentDescription = null, tint = ImmersiveLavenderAccent, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Real-Time Cloud Sync", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                    }
-                    Switch(
-                        checked = autoSync,
-                        onCheckedChange = { autoSync = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = ImmersiveLavenderAccent, checkedTrackColor = ImmersiveLavenderAccent.copy(alpha = 0.5f))
-                    )
+                    Text("Сохранено плейлистов:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${data.syncedPlaylistsCount}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Actions: Backup / Restore
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Избранных треков:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${data.syncedFavoritesCount}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -671,13 +660,9 @@ private fun CloudSyncDashboard(
                         colors = ButtonDefaults.buttonColors(containerColor = ImmersiveLavenderAccent),
                         modifier = Modifier.weight(1f).testTag("backup_to_cloud_button")
                     ) {
-                        if (isSyncing) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = ImmersivePurpleDeep)
-                        } else {
-                            Icon(Icons.Default.CloudUpload, contentDescription = null, tint = ImmersivePurpleDeep, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Backup", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
-                        }
+                        Icon(Icons.Default.CloudUpload, contentDescription = null, tint = ImmersivePurpleDeep, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Сохранить", color = ImmersivePurpleDeep, fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
@@ -687,7 +672,7 @@ private fun CloudSyncDashboard(
                     ) {
                         Icon(Icons.Default.CloudDownload, contentDescription = null, tint = ImmersiveLavenderAccent, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Restore", color = MaterialTheme.colorScheme.onSurface)
+                        Text("Восстановить", color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -706,12 +691,12 @@ private fun CloudSyncDashboard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Devices, contentDescription = null, tint = AccentCyan)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Multi-Device Sync Pairing", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Синхронизация между устройствами", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Use this pairing code on your tablet, car, or desktop to sync all playlists, EQ settings, and playback position:",
+                    "Используйте этот код на планшете или компьютере для синхронизации плейлистов, эквалайзера и позиции трека:",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -736,7 +721,7 @@ private fun CloudSyncDashboard(
                             letterSpacing = 2.sp,
                             fontSize = 14.sp
                         )
-                        Text("ACTIVE", color = ImmersiveLavenderLight, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text("АКТИВЕН", color = ImmersiveLavenderLight, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
                 }
             }

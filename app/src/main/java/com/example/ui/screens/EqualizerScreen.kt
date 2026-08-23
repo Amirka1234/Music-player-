@@ -90,14 +90,14 @@ fun EqualizerScreen(
             ) {
                 Column {
                     Text(
-                        text = "Built-in Equalizer",
+                        text = "Эквалайзер",
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                     )
                     Text(
-                        text = if (state.isEnabled) "Audio Engine Active" else "Equalizer Bypassed",
+                        text = if (state.isEnabled) "Аудиодвижок активен" else "Эквалайзер отключен",
                         fontSize = 12.sp,
                         color = if (state.isEnabled) ImmersiveLavenderAccent else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold
@@ -162,7 +162,7 @@ fun EqualizerScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.GraphicEq, contentDescription = null, tint = ImmersiveLavenderAccent)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Frequency Response Spectrum", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Частотный спектр", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Text(
                             text = state.preset.displayName,
@@ -239,7 +239,7 @@ fun EqualizerScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "5-Band Graphic Audio Equalizer",
+                        text = "5-полосный графический эквалайзер",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
@@ -247,7 +247,7 @@ fun EqualizerScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     BandSliderRow(
-                        frequencyLabel = "60 Hz (Sub-Bass)",
+                        frequencyLabel = "60 Гц (Низкий бас)",
                         currentDb = state.band60Hz,
                         enabled = state.isEnabled,
                         onValueChange = {
@@ -256,7 +256,7 @@ fun EqualizerScreen(
                     )
 
                     BandSliderRow(
-                        frequencyLabel = "230 Hz (Bass Punch)",
+                        frequencyLabel = "230 Гц (Бас)",
                         currentDb = state.band230Hz,
                         enabled = state.isEnabled,
                         onValueChange = {
@@ -265,7 +265,7 @@ fun EqualizerScreen(
                     )
 
                     BandSliderRow(
-                        frequencyLabel = "910 Hz (Midrange)",
+                        frequencyLabel = "910 Гц (Средние частоты)",
                         currentDb = state.band910Hz,
                         enabled = state.isEnabled,
                         onValueChange = {
@@ -274,7 +274,7 @@ fun EqualizerScreen(
                     )
 
                     BandSliderRow(
-                        frequencyLabel = "3.6 kHz (High-Mids)",
+                        frequencyLabel = "3.6 кГц (Высокие средние)",
                         currentDb = state.band3600Hz,
                         enabled = state.isEnabled,
                         onValueChange = {
@@ -283,7 +283,7 @@ fun EqualizerScreen(
                     )
 
                     BandSliderRow(
-                        frequencyLabel = "14 kHz (Treble Air)",
+                        frequencyLabel = "14 кГц (Высокие частоты)",
                         currentDb = state.band14000Hz,
                         enabled = state.isEnabled,
                         onValueChange = {
@@ -306,7 +306,7 @@ fun EqualizerScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Sound Enhancements",
+                        text = "Звуковые эффекты",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
@@ -323,7 +323,7 @@ fun EqualizerScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Speaker, contentDescription = null, tint = ImmersiveLavenderAccent)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Bass Boost", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Усиление баса (Bass Boost)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Text("${(state.bassBoostStrength * 100).toInt()}%", fontWeight = FontWeight.Bold, color = ImmersiveLavenderAccent)
                     }
@@ -352,7 +352,7 @@ fun EqualizerScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.SpatialAudio, contentDescription = null, tint = AccentCyan)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("3D Surround Virtualizer", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("3D-звучание (Virtualizer)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Text("${(state.virtualizerStrength * 100).toInt()}%", fontWeight = FontWeight.Bold, color = AccentCyan)
                     }

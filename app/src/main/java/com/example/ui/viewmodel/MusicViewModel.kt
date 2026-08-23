@@ -56,6 +56,23 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _isDarkTheme = MutableStateFlow(true)
     val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
 
+    // Visualizer visibility setting
+    private val _isVisualizerVisible = MutableStateFlow(false)
+    val isVisualizerVisible: StateFlow<Boolean> = _isVisualizerVisible.asStateFlow()
+
+    // Context Menu & Track editing / lyrics dialog states
+    private val _selectedTrackForMenu = MutableStateFlow<Track?>(null)
+    val selectedTrackForMenu: StateFlow<Track?> = _selectedTrackForMenu.asStateFlow()
+
+    private val _selectedTrackForEdit = MutableStateFlow<Track?>(null)
+    val selectedTrackForEdit: StateFlow<Track?> = _selectedTrackForEdit.asStateFlow()
+
+    private val _selectedTrackForLyrics = MutableStateFlow<Track?>(null)
+    val selectedTrackForLyrics: StateFlow<Track?> = _selectedTrackForLyrics.asStateFlow()
+
+    private val _selectedTrackForDelete = MutableStateFlow<Track?>(null)
+    val selectedTrackForDelete: StateFlow<Track?> = _selectedTrackForDelete.asStateFlow()
+
     // Player state bindings
     val currentTrack: StateFlow<Track?> = playerManager.currentTrack
     val isPlaying: StateFlow<Boolean> = playerManager.isPlaying
@@ -86,8 +103,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     // Featured Streams & Radio
     val featuredStreams: List<Track> = repository.defaultFeaturedTracks
 
-    // Podcasts
-    val podcastShows: List<PodcastShow> = repository.podcastShows
+    // Podcasts from Room (user added via link)
+    val podcastShows: StateFlow<List<PodcastShow>> = repository.customPodcastsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Search query & category filtering
     private val _searchQuery = MutableStateFlow("")
@@ -109,6 +127,12 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _showAddCustomStreamDialog = MutableStateFlow(false)
     val showAddCustomStreamDialog: StateFlow<Boolean> = _showAddCustomStreamDialog.asStateFlow()
+
+    private val _showAddPodcastDialog = MutableStateFlow(false)
+    val showAddPodcastDialog: StateFlow<Boolean> = _showAddPodcastDialog.asStateFlow()
+
+    private val _selectedTrackForAddToPlaylist = MutableStateFlow<Track?>(null)
+    val selectedTrackForAddToPlaylist: StateFlow<Track?> = _selectedTrackForAddToPlaylist.asStateFlow()
 
     private val _showSleepTimerDialog = MutableStateFlow(false)
     val showSleepTimerDialog: StateFlow<Boolean> = _showSleepTimerDialog.asStateFlow()
@@ -189,9 +213,117 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleFavorite(track: Track) {
         viewModelScope.launch {
             val isFav = repository.toggleFavorite(track)
-            val msg = if (isFav) "Added to Favorites" else "Removed from Favorites"
+            val msg = if (isFav) "Добавлено в Любимые" else "Удалено из Любимых"
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun toggleVisualizerVisible() {
+        _isVisualizerVisible.value = !_isVisualizerVisible.value
+    }
+
+    fun setVisualizerVisible(visible: Boolean) {
+        _isVisualizerVisible.value = visible
+    }
+
+    // Track Context Menu Operations
+    fun openTrackContextMenu(track: Track) {
+        _selectedTrackForMenu.value = track
+    }
+
+    fun dismissTrackContextMenu() {
+        _selectedTrackForMenu.value = null
+    }
+
+    fun playNext(track: Track) {
+        playerManager.playNext(track)
+        Toast.makeText(context, "«${track.title}» будет воспроизведен следующим", Toast.LENGTH_SHORT).show()
+    }
+
+    fun addToQueue(track: Track) {
+        playerManager.addToQueue(track)
+        Toast.makeText(context, "«${track.title}» добавлен в очередь", Toast.LENGTH_SHORT).show()
+    }
+
+    fun removeFromQueue(track: Track) {
+        playerManager.removeFromQueue(track.id)
+        Toast.makeText(context, "«${track.title}» удален из очереди", Toast.LENGTH_SHORT).show()
+    }
+
+    fun isTrackInQueue(trackId: String): Boolean {
+        return playerManager.playlist.value.any { it.id == trackId }
+    }
+
+    fun openEditTrackDialog(track: Track) {
+        _selectedTrackForEdit.value = track
+    }
+
+    fun dismissEditTrackDialog() {
+        _selectedTrackForEdit.value = null
+    }
+
+    fun openLyricsDialog(track: Track) {
+        _selectedTrackForLyrics.value = track
+    }
+
+    fun dismissLyricsDialog() {
+        _selectedTrackForLyrics.value = null
+    }
+
+    fun openDeleteTrackDialog(track: Track) {
+        _selectedTrackForDelete.value = track
+    }
+
+    fun dismissDeleteTrackDialog() {
+        _selectedTrackForDelete.value = null
+    }
+
+    fun saveTrackMetadata(
+        track: Track,
+        newTitle: String,
+        newArtist: String,
+        newAlbum: String,
+        newGenre: String,
+        newLyrics: String
+    ) {
+        viewModelScope.launch {
+            val updated = track.copy(
+                title = newTitle,
+                artist = newArtist,
+                album = newAlbum,
+                genre = newGenre,
+                lyrics = newLyrics
+            )
+            repository.saveOrUpdateTrack(updated)
+            // Update local tracks in memory if needed
+            _localTracks.value = _localTracks.value.map { if (it.id == track.id) updated else it }
+            // Update queue in player
+            playerManager.updateTrackInQueue(updated)
+            _selectedTrackForEdit.value = null
+            Toast.makeText(context, "Метаданные трека сохранены", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun deleteTrack(track: Track) {
+        viewModelScope.launch {
+            repository.deleteTrack(track.id)
+            playerManager.removeFromQueue(track.id)
+            _localTracks.value = _localTracks.value.filterNot { it.id == track.id }
+            _selectedTrackForDelete.value = null
+            Toast.makeText(context, "Трек «${track.title}» удален", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun navigateToArtistSearch(artist: String) {
+        _searchQuery.value = artist
+        _selectedSearchFilter.value = "All"
+        _currentTab.value = NavigationTab.SEARCH
+    }
+
+    fun navigateToAlbumSearch(album: String) {
+        _searchQuery.value = album
+        _selectedSearchFilter.value = "All"
+        _currentTab.value = NavigationTab.SEARCH
     }
 
     fun scanDeviceAudio() {

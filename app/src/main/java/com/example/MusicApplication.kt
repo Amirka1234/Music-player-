@@ -27,7 +27,11 @@ class MusicApplication : Application() {
         playerManager = AudioPlayerManager(this)
 
         CoroutineScope(Dispatchers.IO).launch {
-            repository.initializeDefaultPlaylistsIfEmpty()
+            try {
+                repository.initializeDefaultPlaylistsIfEmpty()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

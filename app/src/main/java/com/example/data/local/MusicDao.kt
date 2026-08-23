@@ -43,6 +43,24 @@ interface MusicDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun savePodcastProgress(progress: PodcastProgressEntity)
 
+    @Query("DELETE FROM saved_tracks WHERE id = :trackId")
+    suspend fun deleteTrack(trackId: String)
+
+    @Query("DELETE FROM playlist_tracks WHERE trackId = :trackId")
+    suspend fun removeTrackFromAllPlaylists(trackId: String)
+
+    @Query("SELECT * FROM playlist_tracks")
+    fun getAllPlaylistTrackRefs(): Flow<List<PlaylistTrackCrossRef>>
+
     @Query("SELECT * FROM saved_tracks")
     fun getAllSavedTracks(): Flow<List<SavedTrackEntity>>
+
+    @Query("SELECT * FROM custom_podcasts ORDER BY addedAt DESC")
+    fun getAllCustomPodcasts(): Flow<List<CustomPodcastEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCustomPodcast(podcast: CustomPodcastEntity)
+
+    @Query("DELETE FROM custom_podcasts WHERE id = :podcastId")
+    suspend fun deleteCustomPodcast(podcastId: String)
 }

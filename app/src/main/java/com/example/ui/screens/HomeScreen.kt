@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material3.Card
@@ -61,42 +64,45 @@ import com.example.R
 import com.example.model.Playlist
 import com.example.model.PodcastShow
 import com.example.model.Track
+import com.example.util.TrackCoverImage
 import com.example.ui.theme.AccentCyan
+import com.example.ui.theme.AccentPink
+import com.example.ui.theme.AccentPurple
 import com.example.ui.theme.ImmersiveCardBorder
 import com.example.ui.theme.ImmersiveLavenderAccent
 import com.example.ui.theme.ImmersiveLavenderLight
 import com.example.ui.theme.ImmersivePillInactive
 import com.example.ui.theme.ImmersivePurpleDeep
 import com.example.ui.theme.ImmersiveSurfaceDark
-import com.example.ui.theme.ImmersiveTextMuted
+import com.example.ui.theme.ImmersiveTextPrimary
 import java.util.Calendar
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     featuredTracks: List<Track>,
     playlists: List<Playlist>,
-    podcasts: List<PodcastShow>,
     currentPlayingTrack: Track?,
     isPlaying: Boolean,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
     onPlayTrack: (Track, List<Track>) -> Unit,
     onSelectPlaylist: (Playlist) -> Unit,
-    onOpenPodcast: (PodcastShow) -> Unit,
     onOpenCloudSync: () -> Unit,
+    onOpenTrackMenu: (Track) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val greeting = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when (hour) {
-            in 5..11 -> "Good morning"
-            in 12..17 -> "Good afternoon"
-            else -> "Good evening"
+            in 5..11 -> "Доброе утро"
+            in 12..17 -> "Добрый день"
+            else -> "Добрый вечер"
         }
     }
 
-    var selectedQuickFilter by remember { mutableStateOf("All") }
-    val quickFilters = listOf("All", "Streams", "Playlists", "Podcasts")
+    var selectedQuickFilter by remember { mutableStateOf("Все") }
+    val quickFilters = remember { listOf("Все", "Потоки & Радио", "Плейлисты") }
 
     LazyColumn(
         modifier = modifier
@@ -105,7 +111,7 @@ fun HomeScreen(
         contentPadding = PaddingValues(bottom = 110.dp)
     ) {
         // Header with Greeting & Theme Toggle & Cloud Pill
-        item {
+        item(key = "header", contentType = "header") {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -135,15 +141,15 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 Icons.Default.CloudDone,
-                                contentDescription = "Cloud Synced",
+                                contentDescription = "Синхронизация",
                                 tint = ImmersiveLavenderAccent,
                                 modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Cloud Sync Online",
+                                "Облако активно",
                                 fontSize = 11.sp,
-                                color = ImmersiveLavenderAccent,
+                                color = ImmersiveLavenderLight,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -161,7 +167,7 @@ fun HomeScreen(
                     ) {
                         Icon(
                             imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = "Toggle Theme",
+                            contentDescription = "Сменить тему",
                             tint = ImmersiveLavenderAccent
                         )
                     }
@@ -170,13 +176,17 @@ fun HomeScreen(
         }
 
         // Quick Category Filter Chips
-        item {
+        item(key = "filters", contentType = "filters") {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.padding(bottom = 14.dp)
             ) {
-                items(quickFilters) { filter ->
+                items(
+                    items = quickFilters,
+                    key = { it },
+                    contentType = { "filter_chip" }
+                ) { filter ->
                     val isSelected = selectedQuickFilter == filter
                     Surface(
                         shape = RoundedCornerShape(20.dp),
@@ -197,7 +207,7 @@ fun HomeScreen(
         }
 
         // Quick Access 2-Column Grid
-        item {
+        item(key = "quick_access", contentType = "quick_access") {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -217,6 +227,7 @@ fun HomeScreen(
                                 track = track,
                                 isCurrentlyPlaying = currentPlayingTrack?.id == track.id && isPlaying,
                                 onClick = { onPlayTrack(track, featuredTracks) },
+                                onLongClick = { onOpenTrackMenu(track) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -226,20 +237,25 @@ fun HomeScreen(
         }
 
         // Section: 24/7 Internet Streams & Radio
-        if (selectedQuickFilter == "All" || selectedQuickFilter == "Streams") {
-            item {
+        if (selectedQuickFilter == "Все" || selectedQuickFilter == "Потоки & Радио") {
+            item(key = "section_streams", contentType = "section_streams") {
                 Spacer(modifier = Modifier.height(24.dp))
-                SectionHeader(title = "24/7 Internet Streams & Radio")
+                SectionHeader(title = "Онлайн-радио и аудиопотоки")
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.padding(top = 12.dp)
                 ) {
-                    items(featuredTracks) { track ->
+                    items(
+                        items = featuredTracks,
+                        key = { it.id },
+                        contentType = { "stream_card" }
+                    ) { track ->
                         StreamCard(
                             track = track,
                             isCurrentlyPlaying = currentPlayingTrack?.id == track.id && isPlaying,
-                            onClick = { onPlayTrack(track, featuredTracks) }
+                            onClick = { onPlayTrack(track, featuredTracks) },
+                            onMenuClick = { onOpenTrackMenu(track) }
                         )
                     }
                 }
@@ -247,39 +263,23 @@ fun HomeScreen(
         }
 
         // Section: Top Playlists
-        if (selectedQuickFilter == "All" || selectedQuickFilter == "Playlists") {
-            item {
+        if (selectedQuickFilter == "Все" || selectedQuickFilter == "Плейлисты") {
+            item(key = "section_playlists", contentType = "section_playlists") {
                 Spacer(modifier = Modifier.height(28.dp))
-                SectionHeader(title = "Featured Playlists")
+                SectionHeader(title = "Рекомендуемые плейлисты")
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.padding(top = 12.dp)
                 ) {
-                    items(playlists) { playlist ->
+                    items(
+                        items = playlists,
+                        key = { it.id },
+                        contentType = { "playlist_card" }
+                    ) { playlist ->
                         PlaylistCard(
                             playlist = playlist,
                             onClick = { onSelectPlaylist(playlist) }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Section: Popular Podcasts
-        if (selectedQuickFilter == "All" || selectedQuickFilter == "Podcasts") {
-            item {
-                Spacer(modifier = Modifier.height(28.dp))
-                SectionHeader(title = "Popular Podcasts & Shows")
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.padding(top = 12.dp)
-                ) {
-                    items(podcasts) { show ->
-                        PodcastShowCard(
-                            show = show,
-                            onClick = { onOpenPodcast(show) }
                         )
                     }
                 }
@@ -301,11 +301,13 @@ private fun SectionHeader(title: String) {
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun QuickAccessCard(
     track: Track,
     isCurrentlyPlaying: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -314,16 +316,17 @@ private fun QuickAccessCard(
         border = BorderStroke(1.dp, ImmersiveCardBorder),
         modifier = modifier
             .height(58.dp)
-            .clickable { onClick() }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxSize()
         ) {
-            val cover = track.coverDrawableRes ?: R.drawable.cover_cyberpunk_1787235201442
-            Image(
-                painter = painterResource(id = cover),
-                contentDescription = null,
+            TrackCoverImage(
+                track = track,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(58.dp)
@@ -361,7 +364,8 @@ private fun QuickAccessCard(
 private fun StreamCard(
     track: Track,
     isCurrentlyPlaying: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onMenuClick: () -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(20.dp),
@@ -373,10 +377,8 @@ private fun StreamCard(
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
             Box {
-                val cover = track.coverDrawableRes ?: R.drawable.cover_lofi_1787235216505
-                Image(
-                    painter = painterResource(id = cover),
-                    contentDescription = null,
+                TrackCoverImage(
+                    track = track,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(135.dp)
@@ -395,9 +397,27 @@ private fun StreamCard(
                 ) {
                     Icon(
                         Icons.Default.PlayArrow,
-                        contentDescription = "Play",
+                        contentDescription = "Воспроизвести",
                         tint = ImmersivePurpleDeep,
                         modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Context menu 3-dots button overlay
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(30.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .clickable { onMenuClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = "Меню",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -467,7 +487,7 @@ private fun PlaylistCard(
                 style = MaterialTheme.typography.bodySmall.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
@@ -484,17 +504,17 @@ private fun PodcastShowCard(
         colors = CardDefaults.cardColors(containerColor = ImmersiveSurfaceDark),
         border = BorderStroke(1.dp, ImmersiveCardBorder),
         modifier = Modifier
-            .width(165.dp)
+            .width(155.dp)
             .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
-            val cover = show.coverRes ?: R.drawable.cover_podcast_1787235232773
+            val cover = show.coverRes ?: R.drawable.cover_cyberpunk_1787235201442
             Image(
                 painter = painterResource(id = cover),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(145.dp)
+                    .size(135.dp)
                     .clip(RoundedCornerShape(14.dp))
             )
 
@@ -511,7 +531,7 @@ private fun PodcastShowCard(
             )
 
             Text(
-                text = "Show • ${show.host}",
+                text = "${show.host} • ${show.episodes.size} эп.",
                 style = MaterialTheme.typography.bodySmall.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
